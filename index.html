@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="BuildFlow"/>
 <title>BuildFlow</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -16,96 +17,72 @@
 html,body{height:100%;background:#F9FAFB;}
 body{-webkit-font-smoothing:antialiased;font-family:'Inter',system-ui,sans-serif;}
 input::placeholder,textarea::placeholder{color:#C1C7D0;}
+select{-webkit-appearance:none;}
 ::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:4px;}
 *{-webkit-tap-highlight-color:transparent;}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
-select{-webkit-appearance:none;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @keyframes slideUp{from{opacity:0;transform:translateY(100%);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
 .fu{animation:fadeUp 0.2s ease forwards;}
 .fu1{animation:fadeUp 0.2s 0.04s ease both;}
 .fu2{animation:fadeUp 0.2s 0.08s ease both;}
 .fu3{animation:fadeUp 0.2s 0.12s ease both;}
-.fu4{animation:fadeUp 0.2s 0.16s ease both;}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useRef}=React;
+const {useState, useEffect, useCallback} = React;
+
+const SUPA_URL = 'https://gfxmkouojymwgpvbngzz.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmeG1rb3Vvanltd2dwdmJuZ3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDg5ODAsImV4cCI6MjA4OTUyNDk4MH0.kGTwFZcoHnkuFJR-FTk__MuK6KaqUp7A5HNIkQy1EMA';
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 const C={
-  bg:       '#F9FAFB',
-  white:    '#FFFFFF',
-  border:   '#E5E7EB',
-  border2:  '#F3F4F6',
-  text:     '#111827',
-  muted:    '#6B7280',
-  soft:     '#9CA3AF',
-  input:    '#FFFFFF',
-  accent:   '#111827',
-  blue:     '#2563EB',
-  green:    '#059669',
-  amber:    '#D97706',
-  red:      '#DC2626',
-  blueBg:   '#EFF6FF',
-  greenBg:  '#ECFDF5',
-  amberBg:  '#FFFBEB',
-  redBg:    '#FEF2F2',
+  bg:'#F9FAFB',white:'#FFFFFF',border:'#E5E7EB',border2:'#F3F4F6',
+  text:'#111827',muted:'#6B7280',soft:'#9CA3AF',accent:'#111827',
+  blue:'#2563EB',green:'#059669',amber:'#D97706',red:'#DC2626',
+  blueBg:'#EFF6FF',greenBg:'#ECFDF5',amberBg:'#FFFBEB',redBg:'#FEF2F2',
 };
 
-const KEY='buildflow2_v1';
-const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||seed();}catch{return seed();}};
-const save=d=>{try{localStorage.setItem(KEY,JSON.stringify(d));}catch{}};
-const uid=()=>Math.random().toString(36).slice(2,8);
-const today=()=>new Date().toISOString().split('T')[0];
 const fmt$=n=>n>=1000?`$${(n/1000).toFixed(1)}k`:`$${n||0}`;
-
-function seed(){return{leads:[],jobs:[],invoices:[]};}
+const today=()=>new Date().toISOString().split('T')[0];
 
 const STATUS={
-  'New':        {color:C.blue,  bg:C.blueBg},
-  'Contacted':  {color:'#7C3AED',bg:'#F5F3FF'},
-  'Quoted':     {color:C.amber, bg:C.amberBg},
-  'Won':        {color:C.green, bg:C.greenBg},
-  'Lost':       {color:C.red,   bg:C.redBg},
-  'In Progress':{color:C.blue,  bg:C.blueBg},
-  'Scheduled':  {color:'#7C3AED',bg:'#F5F3FF'},
-  'Complete':   {color:C.green, bg:C.greenBg},
-  'On Hold':    {color:C.amber, bg:C.amberBg},
-  'Draft':      {color:C.muted, bg:C.border2},
-  'Sent':       {color:C.amber, bg:C.amberBg},
-  'Paid':       {color:C.green, bg:C.greenBg},
-  'Overdue':    {color:C.red,   bg:C.redBg},
+  'New':{color:C.blue,bg:C.blueBg},'Contacted':{color:'#7C3AED',bg:'#F5F3FF'},
+  'Quoted':{color:C.amber,bg:C.amberBg},'Won':{color:C.green,bg:C.greenBg},
+  'Lost':{color:C.red,bg:C.redBg},'In Progress':{color:C.blue,bg:C.blueBg},
+  'Scheduled':{color:'#7C3AED',bg:'#F5F3FF'},'Complete':{color:C.green,bg:C.greenBg},
+  'On Hold':{color:C.amber,bg:C.amberBg},'Draft':{color:C.muted,bg:C.border2},
+  'Sent':{color:C.amber,bg:C.amberBg},'Paid':{color:C.green,bg:C.greenBg},
+  'Overdue':{color:C.red,bg:C.redBg},
 };
 
-const Badge=({s})=>{
-  const st=STATUS[s]||{color:C.muted,bg:C.border2};
-  return <span style={{background:st.bg,color:st.color,fontSize:11,fontWeight:600,
-    padding:'3px 8px',borderRadius:20,letterSpacing:'0.02em',display:'inline-block'}}>{s}</span>;
-};
+const Badge=({s})=>{const st=STATUS[s]||{color:C.muted,bg:C.border2};return(
+  <span style={{background:st.bg,color:st.color,fontSize:11,fontWeight:600,
+    padding:'3px 8px',borderRadius:20,display:'inline-block'}}>{s}</span>
+);};
 
 const Avatar=({name})=>{
-  const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const colors=[['#DBEAFE','#1D4ED8'],['#D1FAE5','#065F46'],['#FEF3C7','#92400E'],
-                ['#FCE7F3','#9D174D'],['#EDE9FE','#5B21B6'],['#FFEDD5','#9A3412']];
-  const pick=colors[name.charCodeAt(0)%colors.length];
-  return <div style={{width:36,height:36,borderRadius:'50%',background:pick[0],
-    display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
-    fontSize:12,fontWeight:600,color:pick[1],letterSpacing:'0.04em'}}>{initials}</div>;
+  const initials=(name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const cols=[['#DBEAFE','#1D4ED8'],['#D1FAE5','#065F46'],['#FEF3C7','#92400E'],
+              ['#FCE7F3','#9D174D'],['#EDE9FE','#5B21B6'],['#FFEDD5','#9A3412']];
+  const pick=cols[(name||'A').charCodeAt(0)%cols.length];
+  return <div style={{width:36,height:36,borderRadius:'50%',background:pick[0],flexShrink:0,
+    display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:600,color:pick[1]}}>{initials}</div>;
 };
+
+const Spinner=()=><div style={{width:18,height:18,border:`2px solid ${C.border}`,
+  borderTop:`2px solid ${C.accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>;
 
 const Inp=({label,value,onChange,placeholder,type='text',style:sx={}})=>(
   <div style={{marginBottom:14}}>
-    {label&&<label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,
-      marginBottom:5}}>{label}</label>}
-    <input type={type} value={value} onChange={e=>onChange(e.target.value)}
-      placeholder={placeholder}
+    {label&&<label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>{label}</label>}
+    <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
       style={{width:'100%',background:C.white,border:`1px solid ${C.border}`,borderRadius:8,
-        padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',
-        outline:'none',transition:'border-color 0.15s',...sx}}
+        padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',...sx}}
       onFocus={e=>e.target.style.borderColor=C.blue}
       onBlur={e=>e.target.style.borderColor=C.border}/>
   </div>
@@ -117,8 +94,7 @@ const Sel=({label,value,onChange,options})=>(
     <div style={{position:'relative'}}>
       <select value={value} onChange={e=>onChange(e.target.value)}
         style={{width:'100%',background:C.white,border:`1px solid ${C.border}`,borderRadius:8,
-          padding:'9px 32px 9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',
-          outline:'none',cursor:'pointer'}}>
+          padding:'9px 32px 9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',cursor:'pointer'}}>
         {options.map(o=><option key={o}>{o}</option>)}
       </select>
       <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
@@ -127,17 +103,16 @@ const Sel=({label,value,onChange,options})=>(
   </div>
 );
 
-const Btn=({onClick,children,variant='primary',style:sx={}})=>(
-  <button onClick={onClick} style={{
-    background:variant==='primary'?C.accent:C.white,
-    color:variant==='primary'?C.white:C.text,
-    border:variant==='primary'?'none':`1px solid ${C.border}`,
-    borderRadius:8,padding:'9px 16px',fontSize:13,fontWeight:500,
-    fontFamily:'inherit',cursor:'pointer',transition:'opacity 0.15s',
-    display:'inline-flex',alignItems:'center',gap:6,...sx}}
-    onMouseEnter={e=>e.currentTarget.style.opacity='0.85'}
-    onMouseLeave={e=>e.currentTarget.style.opacity='1'}>
-    {children}
+const Btn=({onClick,children,variant='primary',loading=false,style:sx={}})=>(
+  <button onClick={onClick} disabled={loading}
+    style={{background:variant==='primary'?C.accent:C.white,
+      color:variant==='primary'?C.white:C.text,
+      border:variant==='primary'?'none':`1px solid ${C.border}`,
+      borderRadius:8,padding:'9px 16px',fontSize:13,fontWeight:500,
+      fontFamily:'inherit',cursor:loading?'not-allowed':'pointer',
+      opacity:loading?0.7:1,display:'inline-flex',alignItems:'center',
+      justifyContent:'center',gap:8,...sx}}>
+    {loading?<Spinner/>:children}
   </button>
 );
 
@@ -152,8 +127,7 @@ function Modal({title,onClose,children}){
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <span style={{fontSize:16,fontWeight:600,color:C.text}}>{title}</span>
           <button onClick={onClose} style={{background:'none',border:'none',
-            color:C.muted,fontSize:18,cursor:'pointer',padding:'2px 6px',borderRadius:6,
-            lineHeight:1}}>×</button>
+            color:C.muted,fontSize:20,cursor:'pointer',lineHeight:1}}>×</button>
         </div>
         {children}
       </div>
@@ -161,79 +135,159 @@ function Modal({title,onClose,children}){
   );
 }
 
-function Dashboard({data}){
-  const pipeline=data.leads.filter(l=>l.status!=='Lost').reduce((a,l)=>a+(l.value||0),0);
-  const collected=data.invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
-  const owed=data.invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
-  const activeJobs=data.jobs.filter(j=>j.status==='In Progress'||j.status==='Scheduled');
+// ── AUTH SCREEN ───────────────────────────────────────────────────────────────
+function AuthScreen({onAuth}){
+  const [mode,setMode]=useState('login');
+  const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
+  const [name,setName]=useState('');
+  const [biz,setBiz]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState('');
+  const [success,setSuccess]=useState('');
+
+  const submit=async()=>{
+    setError('');setLoading(true);
+    if(mode==='login'){
+      const{error:e}=await supabase.auth.signInWithPassword({email,password});
+      if(e)setError(e.message);
+    } else {
+      const{data,error:e}=await supabase.auth.signUp({email,password});
+      if(e){setError(e.message);}
+      else if(data.user){
+        await supabase.from('profiles').insert({
+          id:data.user.id,
+          full_name:name,
+          business_name:biz,
+          slug:biz.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').slice(0,30)+'-'+data.user.id.slice(0,6),
+        });
+        setSuccess('Account created! Check your email to confirm, then log in.');
+        setMode('login');
+      }
+    }
+    setLoading(false);
+  };
+
+  return(
+    <div style={{maxWidth:430,margin:'0 auto',minHeight:'100vh',background:C.white,
+      display:'flex',flexDirection:'column',justifyContent:'center',padding:'32px 24px'}}>
+      <div style={{marginBottom:32,textAlign:'center'}}>
+        <div style={{width:44,height:44,background:C.accent,borderRadius:12,
+          display:'inline-flex',alignItems:'center',justifyContent:'center',marginBottom:16}}>
+          <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12L6 4l4 6 2-3 2 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h1 style={{fontSize:24,fontWeight:600,color:C.text,letterSpacing:'-0.02em',marginBottom:6}}>BuildFlow</h1>
+        <p style={{fontSize:14,color:C.muted}}>CRM built for NWA contractors</p>
+      </div>
+
+      {error&&<div style={{background:C.redBg,border:`1px solid #FECACA`,borderRadius:8,
+        padding:'10px 14px',marginBottom:16,fontSize:13,color:C.red}}>{error}</div>}
+      {success&&<div style={{background:C.greenBg,border:`1px solid #A7F3D0`,borderRadius:8,
+        padding:'10px 14px',marginBottom:16,fontSize:13,color:C.green}}>{success}</div>}
+
+      {mode==='signup'&&<>
+        <Inp label="Your name" value={name} onChange={setName} placeholder="Mike Johnson"/>
+        <Inp label="Business name" value={biz} onChange={setBiz} placeholder="Johnson Roofing"/>
+      </>}
+      <Inp label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/>
+      <Inp label="Password" value={password} onChange={setPassword} placeholder="••••••••" type="password"/>
+
+      <Btn onClick={submit} loading={loading} style={{width:'100%',padding:'11px',marginBottom:14,marginTop:4}}>
+        {mode==='login'?'Sign in':'Create account'}
+      </Btn>
+
+      <p style={{textAlign:'center',fontSize:13,color:C.muted}}>
+        {mode==='login'?'No account? ':'Have an account? '}
+        <button onClick={()=>{setMode(mode==='login'?'signup':'login');setError('');}}
+          style={{background:'none',border:'none',color:C.blue,cursor:'pointer',
+            fontSize:13,fontWeight:500,fontFamily:'inherit'}}>
+          {mode==='login'?'Sign up free':'Sign in'}
+        </button>
+      </p>
+    </div>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({leads,jobs,invoices,profile}){
+  const pipeline=leads.filter(l=>l.status!=='Lost').reduce((a,l)=>a+(l.value||0),0);
+  const collected=invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  const owed=invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
+  const activeJobs=jobs.filter(j=>j.status==='In Progress'||j.status==='Scheduled');
+  const newLeads=leads.filter(l=>l.status==='New').length;
 
   return(
     <div>
-      <div className="fu" style={{marginBottom:24}}>
+      <div className="fu" style={{marginBottom:20}}>
         <p style={{fontSize:13,color:C.muted,marginBottom:2}}>
           {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
         </p>
-        <h1 style={{fontSize:24,fontWeight:600,color:C.text,letterSpacing:'-0.02em'}}>Good morning</h1>
+        <h1 style={{fontSize:22,fontWeight:600,color:C.text,letterSpacing:'-0.02em'}}>
+          {profile?.business_name||'Dashboard'}
+        </h1>
+        {newLeads>0&&(
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:8,
+            background:C.blueBg,border:`1px solid #BFDBFE`,borderRadius:20,padding:'4px 12px'}}>
+            <div style={{width:6,height:6,borderRadius:'50%',background:C.blue}}/>
+            <span style={{fontSize:12,color:C.blue,fontWeight:500}}>{newLeads} new lead{newLeads>1?'s':''} waiting</span>
+          </div>
+        )}
       </div>
 
-      <div className="fu1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:24}}>
+      <div className="fu1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
         {[
-          {label:'Pipeline',value:fmt$(pipeline),sub:`${data.leads.length} leads`},
+          {label:'Pipeline',value:fmt$(pipeline),sub:`${leads.length} leads`},
           {label:'Active jobs',value:activeJobs.length,sub:'in progress'},
           {label:'Awaiting payment',value:fmt$(owed),sub:'outstanding'},
           {label:'Collected',value:fmt$(collected),sub:'total paid'},
         ].map(s=>(
           <div key={s.label} style={{background:C.white,borderRadius:12,padding:'14px 16px',
             border:`1px solid ${C.border}`}}>
-            <p style={{fontSize:11,color:C.muted,fontWeight:500,marginBottom:6,
-              letterSpacing:'0.02em'}}>{s.label.toUpperCase()}</p>
-            <p style={{fontSize:22,fontWeight:600,color:C.text,letterSpacing:'-0.02em',
-              marginBottom:2}}>{s.value}</p>
+            <p style={{fontSize:11,color:C.muted,fontWeight:500,marginBottom:6,letterSpacing:'0.02em'}}>
+              {s.label.toUpperCase()}
+            </p>
+            <p style={{fontSize:20,fontWeight:600,color:C.text,letterSpacing:'-0.02em',marginBottom:2}}>
+              {s.value}
+            </p>
             <p style={{fontSize:11,color:C.soft}}>{s.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="fu2" style={{marginBottom:24}}>
-        <p style={{fontSize:12,fontWeight:500,color:C.muted,letterSpacing:'0.04em',
-          textTransform:'uppercase',marginBottom:10}}>Recent Leads</p>
-        <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-          {data.leads.slice(-3).reverse().map((lead,i,arr)=>(
-            <div key={lead.id} style={{padding:'13px 16px',
-              borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',
-              display:'flex',alignItems:'center',gap:12}}>
-              <Avatar name={lead.name}/>
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2,
-                  whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.name}</p>
-                <p style={{fontSize:12,color:C.muted}}>{lead.trade} · {lead.source}</p>
-              </div>
-              <div style={{textAlign:'right',flexShrink:0}}>
-                <p style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
-                <Badge s={lead.status}/>
-              </div>
-            </div>
-          ))}
+      {/* Lead capture link */}
+      {profile?.slug&&(
+        <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,
+          borderRadius:12,padding:'14px 16px',marginBottom:16}}>
+          <p style={{fontSize:12,fontWeight:500,color:C.muted,textTransform:'uppercase',
+            letterSpacing:'0.04em',marginBottom:8}}>Your Lead Capture Link</p>
+          <div style={{background:C.bg,borderRadius:8,padding:'9px 12px',marginBottom:10,
+            fontSize:12,color:C.blue,wordBreak:'break-all',fontFamily:'monospace'}}>
+            {window.location.origin}/quote/{profile.slug}
+          </div>
+          <p style={{fontSize:12,color:C.muted}}>Share this link — customers fill it out and leads appear here instantly.</p>
         </div>
-      </div>
+      )}
 
-      {activeJobs.length>0&&(
+      {leads.slice(-3).reverse().length>0&&(
         <div className="fu3">
           <p style={{fontSize:12,fontWeight:500,color:C.muted,letterSpacing:'0.04em',
-            textTransform:'uppercase',marginBottom:10}}>Active Jobs</p>
+            textTransform:'uppercase',marginBottom:10}}>Recent Leads</p>
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-            {activeJobs.map((job,i,arr)=>(
-              <div key={job.id} style={{padding:'13px 16px',
+            {leads.slice(-3).reverse().map((lead,i,arr)=>(
+              <div key={lead.id} style={{padding:'13px 16px',
                 borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',
                 display:'flex',alignItems:'center',gap:12}}>
-                <Avatar name={job.client}/>
+                <Avatar name={lead.name}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{job.client}</p>
-                  <p style={{fontSize:12,color:C.muted}}>{job.trade} · {job.start}</p>
+                  <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2,
+                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.name}</p>
+                  <p style={{fontSize:12,color:C.muted}}>{lead.trade} · {lead.source}</p>
                 </div>
                 <div style={{textAlign:'right',flexShrink:0}}>
-                  <p style={{fontSize:14,fontWeight:600,color:C.green,marginBottom:4}}>{fmt$(job.value)}</p>
-                  <Badge s={job.status}/>
+                  <p style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
+                  <Badge s={lead.status}/>
                 </div>
               </div>
             ))}
@@ -244,33 +298,38 @@ function Dashboard({data}){
   );
 }
 
-function Leads({data,setData}){
+// ── LEADS ─────────────────────────────────────────────────────────────────────
+function Leads({leads,setLeads,userId}){
   const [showAdd,setShowAdd]=useState(false);
   const [filter,setFilter]=useState('All');
+  const [loading,setLoading]=useState(false);
   const blank={name:'',phone:'',trade:'Roofing',source:'Facebook',status:'New',value:'',notes:'',address:''};
   const [form,setForm]=useState(blank);
 
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
   const sources=['Facebook','Referral','Google','Door Knock','Nextdoor','Other'];
   const statuses=['New','Contacted','Quoted','Won','Lost'];
+  const filtered=filter==='All'?leads:leads.filter(l=>l.status===filter);
 
-  const filtered=filter==='All'?data.leads:data.leads.filter(l=>l.status===filter);
-
-  const add=()=>{
+  const add=async()=>{
     if(!form.name.trim())return;
-    const next={...data,leads:[...data.leads,{...form,id:uid(),value:parseFloat(form.value)||0,created:today()}]};
-    setData(next);save(next);setForm(blank);setShowAdd(false);
+    setLoading(true);
+    const{data,error}=await supabase.from('leads').insert({
+      ...form,value:parseFloat(form.value)||0,user_id:userId
+    }).select().single();
+    if(!error)setLeads(prev=>[...prev,data]);
+    setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  const setStatus=(id,status)=>{
-    const next={...data,leads:data.leads.map(l=>l.id===id?{...l,status}:l)};
-    setData(next);save(next);
+  const updateStatus=async(id,status)=>{
+    await supabase.from('leads').update({status}).eq('id',id);
+    setLeads(prev=>prev.map(l=>l.id===id?{...l,status}:l));
   };
 
-  const del=(id)=>{
+  const del=async(id)=>{
     if(!confirm('Delete this lead?'))return;
-    const next={...data,leads:data.leads.filter(l=>l.id!==id)};
-    setData(next);save(next);
+    await supabase.from('leads').delete().eq('id',id);
+    setLeads(prev=>prev.filter(l=>l.id!==id));
   };
 
   return(
@@ -279,7 +338,7 @@ function Leads({data,setData}){
         alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:22,fontWeight:600,color:C.text,letterSpacing:'-0.02em'}}>Leads</h1>
-          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{data.leads.length} total</p>
+          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{leads.length} total</p>
         </div>
         <Btn onClick={()=>setShowAdd(true)}>+ Add lead</Btn>
       </div>
@@ -287,82 +346,70 @@ function Leads({data,setData}){
       <div className="fu1" style={{display:'flex',gap:6,marginBottom:16,overflowX:'auto',paddingBottom:4}}>
         {['All',...statuses].map(f=>(
           <button key={f} onClick={()=>setFilter(f)}
-            style={{background:filter===f?C.accent:C.white,
-              color:filter===f?C.white:C.muted,
-              border:`1px solid ${filter===f?C.accent:C.border}`,
-              borderRadius:20,padding:'5px 14px',fontSize:12,fontWeight:500,
-              fontFamily:'inherit',cursor:'pointer',whiteSpace:'nowrap',
-              transition:'all 0.15s'}}>
+            style={{background:filter===f?C.accent:C.white,color:filter===f?C.white:C.muted,
+              border:`1px solid ${filter===f?C.accent:C.border}`,borderRadius:20,
+              padding:'5px 14px',fontSize:12,fontWeight:500,fontFamily:'inherit',
+              cursor:'pointer',whiteSpace:'nowrap'}}>
             {f}
           </button>
         ))}
       </div>
 
-      <div className="fu2">
+      <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,
+        borderRadius:12,overflow:'hidden'}}>
         {filtered.length===0&&(
-          <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,
-            padding:32,textAlign:'center',color:C.muted,fontSize:14}}>
+          <div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>
             No leads yet. Add your first one.
           </div>
         )}
-        <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-          {filtered.map((lead,i,arr)=>(
-            <div key={lead.id} style={{padding:'14px 16px',
-              borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-              <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:10}}>
-                <Avatar name={lead.name}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
-                    <div>
-                      <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{lead.name}</p>
-                      <p style={{fontSize:12,color:C.muted}}>{lead.phone} · {lead.trade}</p>
-                    </div>
-                    <div style={{textAlign:'right',flexShrink:0}}>
-                      <p style={{fontSize:15,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
-                      <Badge s={lead.status}/>
-                    </div>
+        {filtered.map((lead,i,arr)=>(
+          <div key={lead.id} style={{padding:'14px 16px',
+            borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
+              <Avatar name={lead.name}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{lead.name}</p>
+                    <p style={{fontSize:12,color:C.muted}}>{lead.phone} · {lead.trade}</p>
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0}}>
+                    <p style={{fontSize:15,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
+                    <Badge s={lead.status}/>
                   </div>
                 </div>
               </div>
-
-              {lead.address&&(
-                <p style={{fontSize:12,color:C.muted,marginBottom:6,
-                  paddingLeft:48}}>📍 {lead.address}</p>
-              )}
-              {lead.notes&&(
-                <p style={{fontSize:12,color:C.muted,marginBottom:10,paddingLeft:48,
-                  background:C.bg,padding:'8px 12px',borderRadius:6,marginLeft:48,
-                  lineHeight:1.5}}>{lead.notes}</p>
-              )}
-
-              <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingLeft:48}}>
-                {statuses.filter(s=>s!==lead.status).map(s=>(
-                  <button key={s} onClick={()=>setStatus(lead.id,s)}
-                    style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                      padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
-                      fontFamily:'inherit',cursor:'pointer',transition:'all 0.15s'}}
-                    onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                    {s}
-                  </button>
-                ))}
-                <button onClick={()=>del(lead.id)}
-                  style={{background:'none',border:'none',color:C.soft,fontSize:11,
-                    fontFamily:'inherit',cursor:'pointer',marginLeft:'auto',padding:'4px 4px'}}
-                  onMouseEnter={e=>e.currentTarget.style.color=C.red}
-                  onMouseLeave={e=>e.currentTarget.style.color=C.soft}>
-                  Delete
-                </button>
-              </div>
             </div>
-          ))}
-        </div>
+            {lead.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {lead.address}</p>}
+            {lead.notes&&<div style={{fontSize:12,color:C.muted,marginBottom:8,paddingLeft:48,
+              background:C.bg,padding:'8px 12px',borderRadius:6,marginLeft:48,lineHeight:1.5}}>{lead.notes}</div>}
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingLeft:48,alignItems:'center'}}>
+              {statuses.filter(s=>s!==lead.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(lead.id,s)}
+                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
+                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                    fontFamily:'inherit',cursor:'pointer'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
+                  {s}
+                </button>
+              ))}
+              <button onClick={()=>del(lead.id)}
+                style={{background:'none',border:'none',color:C.soft,fontSize:11,
+                  fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}
+                onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                onMouseLeave={e=>e.currentTarget.style.color=C.soft}>
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {showAdd&&(
         <Modal title="New lead" onClose={()=>setShowAdd(false)}>
           <Inp label="Full name" value={form.name} onChange={v=>setForm({...form,name:v})} placeholder="Client name"/>
-          <Inp label="Phone number" value={form.phone} onChange={v=>setForm({...form,phone:v})} placeholder="479-555-0000" type="tel"/>
+          <Inp label="Phone" value={form.phone} onChange={v=>setForm({...form,phone:v})} placeholder="479-555-0000" type="tel"/>
           <Inp label="Address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="Job site address"/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <Sel label="Trade" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
@@ -378,36 +425,40 @@ function Leads({data,setData}){
               placeholder="Scope, timeline, anything important..."
               style={{width:'100%',minHeight:80,background:C.white,border:`1px solid ${C.border}`,
                 borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,
-                fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}
-              onFocus={e=>e.target.style.borderColor=C.blue}
-              onBlur={e=>e.target.style.borderColor=C.border}/>
+                fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
           </div>
-          <Btn onClick={add} style={{width:'100%',justifyContent:'center',padding:'11px'}}>Save lead</Btn>
+          <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px'}}>Save lead</Btn>
         </Modal>
       )}
     </div>
   );
 }
 
-function Jobs({data,setData}){
+// ── JOBS ──────────────────────────────────────────────────────────────────────
+function Jobs({jobs,setJobs,userId}){
   const [showAdd,setShowAdd]=useState(false);
-  const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start:today(),address:'',notes:''};
+  const [loading,setLoading]=useState(false);
+  const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start_date:today(),address:'',notes:''};
   const [form,setForm]=useState(blank);
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
   const statuses=['Scheduled','In Progress','Complete','On Hold'];
 
-  const add=()=>{
+  const add=async()=>{
     if(!form.client.trim())return;
-    const next={...data,jobs:[...data.jobs,{...form,id:uid(),value:parseFloat(form.value)||0}]};
-    setData(next);save(next);setForm(blank);setShowAdd(false);
+    setLoading(true);
+    const{data,error}=await supabase.from('jobs').insert({
+      ...form,value:parseFloat(form.value)||0,user_id:userId
+    }).select().single();
+    if(!error)setJobs(prev=>[...prev,data]);
+    setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  const setStatus=(id,status)=>{
-    const next={...data,jobs:data.jobs.map(j=>j.id===id?{...j,status}:j)};
-    setData(next);save(next);
+  const updateStatus=async(id,status)=>{
+    await supabase.from('jobs').update({status}).eq('id',id);
+    setJobs(prev=>prev.map(j=>j.id===id?{...j,status}:j));
   };
 
-  const total=data.jobs.reduce((a,j)=>a+(j.value||0),0);
+  const total=jobs.reduce((a,j)=>a+(j.value||0),0);
 
   return(
     <div>
@@ -415,52 +466,48 @@ function Jobs({data,setData}){
         alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:22,fontWeight:600,color:C.text,letterSpacing:'-0.02em'}}>Jobs</h1>
-          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{data.jobs.length} jobs · {fmt$(total)}</p>
+          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{jobs.length} jobs · {fmt$(total)}</p>
         </div>
         <Btn onClick={()=>setShowAdd(true)}>+ Add job</Btn>
       </div>
 
-      <div className="fu1">
-        {data.jobs.length===0&&(
-          <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,
-            padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet.</div>
-        )}
-        <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-          {data.jobs.map((job,i,arr)=>(
-            <div key={job.id} style={{padding:'14px 16px',
-              borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-              <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
-                <Avatar name={job.client}/>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-                    <div>
-                      <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{job.client}</p>
-                      <p style={{fontSize:12,color:C.muted}}>{job.trade} · Start {job.start}</p>
-                    </div>
-                    <div style={{textAlign:'right',flexShrink:0}}>
-                      <p style={{fontSize:15,fontWeight:600,color:C.green,marginBottom:4}}>{fmt$(job.value)}</p>
-                      <Badge s={job.status}/>
-                    </div>
+      <div className="fu1" style={{background:C.white,border:`1px solid ${C.border}`,
+        borderRadius:12,overflow:'hidden'}}>
+        {jobs.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet.</div>}
+        {jobs.map((job,i,arr)=>(
+          <div key={job.id} style={{padding:'14px 16px',
+            borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
+              <Avatar name={job.client}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{job.client}</p>
+                    <p style={{fontSize:12,color:C.muted}}>{job.trade} · {job.start_date}</p>
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0}}>
+                    <p style={{fontSize:15,fontWeight:600,color:C.green,marginBottom:4}}>{fmt$(job.value)}</p>
+                    <Badge s={job.status}/>
                   </div>
                 </div>
               </div>
-              {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {job.address}</p>}
-              {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:48,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
-              <div style={{display:'flex',gap:6,paddingLeft:48}}>
-                {statuses.filter(s=>s!==job.status).map(s=>(
-                  <button key={s} onClick={()=>setStatus(job.id,s)}
-                    style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                      padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
-                      fontFamily:'inherit',cursor:'pointer'}}
-                    onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                    {s}
-                  </button>
-                ))}
-              </div>
             </div>
-          ))}
-        </div>
+            {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {job.address}</p>}
+            {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:48,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
+            <div style={{display:'flex',gap:6,paddingLeft:48}}>
+              {statuses.filter(s=>s!==job.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(job.id,s)}
+                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
+                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                    fontFamily:'inherit',cursor:'pointer'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {showAdd&&(
@@ -473,7 +520,7 @@ function Jobs({data,setData}){
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <Inp label="Value" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="$0" type="number"/>
-            <Inp label="Start date" value={form.start} onChange={v=>setForm({...form,start:v})} type="date"/>
+            <Inp label="Start date" value={form.start_date} onChange={v=>setForm({...form,start_date:v})} type="date"/>
           </div>
           <div style={{marginBottom:20}}>
             <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
@@ -481,35 +528,39 @@ function Jobs({data,setData}){
               placeholder="Scope, crew, materials..."
               style={{width:'100%',minHeight:70,background:C.white,border:`1px solid ${C.border}`,
                 borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,
-                fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}
-              onFocus={e=>e.target.style.borderColor=C.blue}
-              onBlur={e=>e.target.style.borderColor=C.border}/>
+                fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
           </div>
-          <Btn onClick={add} style={{width:'100%',justifyContent:'center',padding:'11px'}}>Save job</Btn>
+          <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px'}}>Save job</Btn>
         </Modal>
       )}
     </div>
   );
 }
 
-function Invoices({data,setData}){
+// ── INVOICES ──────────────────────────────────────────────────────────────────
+function Invoices({invoices,setInvoices,userId}){
   const [showAdd,setShowAdd]=useState(false);
-  const blank={client:'',amount:'',status:'Draft',due:'',created:today()};
+  const [loading,setLoading]=useState(false);
+  const blank={client:'',amount:'',status:'Draft',due_date:''};
   const [form,setForm]=useState(blank);
   const statuses=['Draft','Sent','Paid','Overdue'];
 
-  const paid=data.invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
-  const owed=data.invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
+  const paid=invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  const owed=invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
 
-  const add=()=>{
+  const add=async()=>{
     if(!form.client.trim())return;
-    const next={...data,invoices:[...data.invoices,{...form,id:uid(),amount:parseFloat(form.amount)||0}]};
-    setData(next);save(next);setForm(blank);setShowAdd(false);
+    setLoading(true);
+    const{data,error}=await supabase.from('invoices').insert({
+      ...form,amount:parseFloat(form.amount)||0,user_id:userId
+    }).select().single();
+    if(!error)setInvoices(prev=>[...prev,data]);
+    setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  const setStatus=(id,status)=>{
-    const next={...data,invoices:data.invoices.map(i=>i.id===id?{...i,status}:i)};
-    setData(next);save(next);
+  const updateStatus=async(id,status)=>{
+    await supabase.from('invoices').update({status}).eq('id',id);
+    setInvoices(prev=>prev.map(i=>i.id===id?{...i,status}:i));
   };
 
   return(
@@ -525,52 +576,47 @@ function Invoices({data,setData}){
 
       <div className="fu1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
         {[{label:'Outstanding',val:fmt$(owed),color:C.amber},{label:'Collected',val:fmt$(paid),color:C.green}].map(s=>(
-          <div key={s.label} style={{background:C.white,border:`1px solid ${C.border}`,
-            borderRadius:12,padding:'14px 16px'}}>
-            <p style={{fontSize:11,fontWeight:500,color:C.muted,letterSpacing:'0.02em',
-              marginBottom:6}}>{s.label.toUpperCase()}</p>
-            <p style={{fontSize:22,fontWeight:600,color:s.color,letterSpacing:'-0.02em'}}>{s.val}</p>
+          <div key={s.label} style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 16px'}}>
+            <p style={{fontSize:11,fontWeight:500,color:C.muted,letterSpacing:'0.02em',marginBottom:6}}>{s.label.toUpperCase()}</p>
+            <p style={{fontSize:20,fontWeight:600,color:s.color,letterSpacing:'-0.02em'}}>{s.val}</p>
           </div>
         ))}
       </div>
 
-      <div className="fu2">
-        <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-          {data.invoices.map((inv,i,arr)=>(
-            <div key={inv.id} style={{padding:'14px 16px',
-              borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-                <Avatar name={inv.client}/>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-                    <div>
-                      <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{inv.client}</p>
-                      <p style={{fontSize:12,color:C.muted}}>
-                        Created {inv.created}{inv.due?` · Due ${inv.due}`:''}
-                      </p>
-                    </div>
-                    <div style={{textAlign:'right',flexShrink:0}}>
-                      <p style={{fontSize:16,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(inv.amount)}</p>
-                      <Badge s={inv.status}/>
-                    </div>
+      <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
+        {invoices.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No invoices yet.</div>}
+        {invoices.map((inv,i,arr)=>(
+          <div key={inv.id} style={{padding:'14px 16px',
+            borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
+              <Avatar name={inv.client}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+                  <div>
+                    <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{inv.client}</p>
+                    <p style={{fontSize:12,color:C.muted}}>{inv.due_date?`Due ${inv.due_date}`:'No due date'}</p>
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0}}>
+                    <p style={{fontSize:16,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(inv.amount)}</p>
+                    <Badge s={inv.status}/>
                   </div>
                 </div>
               </div>
-              <div style={{display:'flex',gap:6,paddingLeft:48}}>
-                {statuses.filter(s=>s!==inv.status).map(s=>(
-                  <button key={s} onClick={()=>setStatus(inv.id,s)}
-                    style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                      padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
-                      fontFamily:'inherit',cursor:'pointer'}}
-                    onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                    {s}
-                  </button>
-                ))}
-              </div>
             </div>
-          ))}
-        </div>
+            <div style={{display:'flex',gap:6,paddingLeft:48}}>
+              {statuses.filter(s=>s!==inv.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(inv.id,s)}
+                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
+                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                    fontFamily:'inherit',cursor:'pointer'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {showAdd&&(
@@ -579,18 +625,162 @@ function Invoices({data,setData}){
           <Inp label="Amount" value={form.amount} onChange={v=>setForm({...form,amount:v})} placeholder="$0" type="number"/>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
-            <Inp label="Due date" value={form.due} onChange={v=>setForm({...form,due:v})} type="date"/>
+            <Inp label="Due date" value={form.due_date} onChange={v=>setForm({...form,due_date:v})} type="date"/>
           </div>
-          <Btn onClick={add} style={{width:'100%',justifyContent:'center',padding:'11px',marginTop:6}}>Create invoice</Btn>
+          <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px',marginTop:6}}>Create invoice</Btn>
         </Modal>
       )}
     </div>
   );
 }
 
+// ── PUBLIC LEAD CAPTURE FORM ──────────────────────────────────────────────────
+function LeadCaptureForm({slug}){
+  const [profile,setProfile]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [submitted,setSubmitted]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [form,setForm]=useState({name:'',phone:'',address:'',trade:'Roofing',notes:''});
+  const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
+
+  useEffect(()=>{
+    supabase.from('profiles').select('*').eq('slug',slug).single()
+      .then(({data})=>{setProfile(data);setLoading(false);});
+  },[slug]);
+
+  const submit=async()=>{
+    if(!form.name.trim()||!form.phone.trim())return;
+    setSaving(true);
+    await supabase.from('leads').insert({
+      ...form,user_id:profile.id,source:'Web Form',status:'New'
+    });
+    setSaving(false);setSubmitted(true);
+  };
+
+  if(loading)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white}}>
+      <Spinner/>
+    </div>
+  );
+
+  if(!profile)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',
+      background:C.white,padding:24,textAlign:'center'}}>
+      <div>
+        <p style={{fontSize:16,fontWeight:500,color:C.text,marginBottom:8}}>Page not found</p>
+        <p style={{fontSize:14,color:C.muted}}>This link may be invalid.</p>
+      </div>
+    </div>
+  );
+
+  if(submitted)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',
+      background:C.white,padding:24,textAlign:'center'}}>
+      <div>
+        <div style={{width:56,height:56,background:C.greenBg,borderRadius:'50%',
+          display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',
+          fontSize:24}}>✓</div>
+        <p style={{fontSize:18,fontWeight:600,color:C.text,marginBottom:8}}>Request sent!</p>
+        <p style={{fontSize:14,color:C.muted}}>{profile.business_name||profile.full_name} will be in touch shortly.</p>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',background:C.white,padding:'32px 20px 40px'}}>
+      <div style={{textAlign:'center',marginBottom:28}}>
+        <div style={{width:44,height:44,background:C.accent,borderRadius:12,
+          display:'inline-flex',alignItems:'center',justifyContent:'center',marginBottom:12}}>
+          <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+            <path d="M2 12L6 4l4 6 2-3 2 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h1 style={{fontSize:20,fontWeight:600,color:C.text,marginBottom:4}}>
+          {profile.business_name||profile.full_name}
+        </h1>
+        <p style={{fontSize:14,color:C.muted}}>Request a free quote — we'll get back to you fast.</p>
+      </div>
+
+      <Inp label="Your name *" value={form.name} onChange={v=>setForm({...form,name:v})} placeholder="Full name"/>
+      <Inp label="Phone number *" value={form.phone} onChange={v=>setForm({...form,phone:v})} placeholder="479-555-0000" type="tel"/>
+      <Inp label="Address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="Service address"/>
+      <Sel label="Service needed" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
+      <div style={{marginBottom:20}}>
+        <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Tell us about the job</label>
+        <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}
+          placeholder="Describe what you need done..."
+          style={{width:'100%',minHeight:100,background:C.white,border:`1px solid ${C.border}`,
+            borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,
+            fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
+      </div>
+      <Btn onClick={submit} loading={saving} style={{width:'100%',padding:'13px',fontSize:15}}>
+        Request Free Quote
+      </Btn>
+      <p style={{fontSize:11,color:C.soft,textAlign:'center',marginTop:12}}>
+        Powered by BuildFlow
+      </p>
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App(){
+  const [session,setSession]=useState(null);
+  const [profile,setProfile]=useState(null);
+  const [leads,setLeads]=useState([]);
+  const [jobs,setJobs]=useState([]);
+  const [invoices,setInvoices]=useState([]);
   const [screen,setScreen]=useState('dashboard');
-  const [data,setData]=useState(()=>load());
+  const [loading,setLoading]=useState(true);
+
+  // Check if this is a lead capture URL
+  const path=window.location.pathname;
+  const quoteMatch=path.match(/^\/quote\/(.+)/);
+
+  useEffect(()=>{
+    supabase.auth.getSession().then(({data:{session}})=>{
+      setSession(session);
+      if(session)loadData(session.user.id);
+      else setLoading(false);
+    });
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
+      setSession(session);
+      if(session)loadData(session.user.id);
+      else{setLoading(false);setLeads([]);setJobs([]);setInvoices([]);}
+    });
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  const loadData=async(uid)=>{
+    setLoading(true);
+    const[p,l,j,i]=await Promise.all([
+      supabase.from('profiles').select('*').eq('id',uid).single(),
+      supabase.from('leads').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
+      supabase.from('jobs').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
+      supabase.from('invoices').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
+    ]);
+    setProfile(p.data);
+    setLeads(l.data||[]);
+    setJobs(j.data||[]);
+    setInvoices(i.data||[]);
+    setLoading(false);
+  };
+
+  const signOut=async()=>{await supabase.auth.signOut();setScreen('dashboard');};
+
+  // Lead capture page
+  if(quoteMatch)return <LeadCaptureForm slug={quoteMatch[1]}/>;
+
+  if(loading)return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white}}>
+      <div style={{textAlign:'center'}}>
+        <Spinner/>
+        <p style={{fontSize:13,color:C.muted,marginTop:12}}>Loading...</p>
+      </div>
+    </div>
+  );
+
+  if(!session)return <AuthScreen onAuth={()=>{}}/>;
 
   const NAV=[
     {id:'dashboard',label:'Home',   icon:<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor"/></svg>},
@@ -600,11 +790,10 @@ function App(){
   ];
 
   return(
-    <div style={{maxWidth:430,margin:'0 auto',minHeight:'100vh',
+    <div style={{maxWidth:430,margin:'0 auto',minHeight:'100vh',minHeight:'100dvh',
       background:C.bg,color:C.text,fontFamily:"'Inter',system-ui,sans-serif",
       display:'flex',flexDirection:'column'}}>
 
-      {/* Header */}
       <div style={{background:C.white,padding:'52px 20px 14px',
         borderBottom:`1px solid ${C.border}`,position:'sticky',top:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -616,30 +805,28 @@ function App(){
               </svg>
             </div>
             <div>
-              <p style={{fontSize:10,fontWeight:500,color:C.muted,letterSpacing:'0.06em',
+              <p style={{fontSize:9,fontWeight:500,color:C.muted,letterSpacing:'0.06em',
                 textTransform:'uppercase',lineHeight:1,marginBottom:1}}>BuildFlow</p>
               <p style={{fontSize:17,fontWeight:600,color:C.text,letterSpacing:'-0.02em',lineHeight:1}}>
                 {NAV.find(n=>n.id===screen)?.label}
               </p>
             </div>
           </div>
-          <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-            padding:'4px 10px',fontSize:11,color:C.muted,fontWeight:500}}>
-            NWA Pro
-          </div>
+          <button onClick={signOut}
+            style={{background:'none',border:`1px solid ${C.border}`,borderRadius:6,
+              padding:'4px 10px',fontSize:11,color:C.muted,fontFamily:'inherit',cursor:'pointer'}}>
+            Sign out
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 100px',
-        WebkitOverflowScrolling:'touch'}}>
-        {screen==='dashboard'&&<Dashboard data={data}/>}
-        {screen==='leads'    &&<Leads     data={data} setData={setData}/>}
-        {screen==='jobs'     &&<Jobs      data={data} setData={setData}/>}
-        {screen==='invoices' &&<Invoices  data={data} setData={setData}/>}
+      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 100px',WebkitOverflowScrolling:'touch'}}>
+        {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile}/>}
+        {screen==='leads'    &&<Leads leads={leads} setLeads={setLeads} userId={session.user.id}/>}
+        {screen==='jobs'     &&<Jobs  jobs={jobs}   setJobs={setJobs}   userId={session.user.id}/>}
+        {screen==='invoices' &&<Invoices invoices={invoices} setInvoices={setInvoices} userId={session.user.id}/>}
       </div>
 
-      {/* Bottom Nav */}
       <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',
         width:'100%',maxWidth:430,background:C.white,
         borderTop:`1px solid ${C.border}`,display:'flex',
@@ -666,3 +853,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
