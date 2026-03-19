@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="BuildFlow"/>
+<title>BuildFlow — Contractor CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#0A0F1A;}
+body{-webkit-font-smoothing:antialiased;}
+input::placeholder,textarea::placeholder{color:#3A4560;}
+::-webkit-scrollbar{display:none;}
+*{-webkit-tap-highlight-color:transparent;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@keyframes slideIn{from{transform:translateX(100%);}to{transform:translateX(0);}}
+
+.fade-up{animation:fadeUp 0.3s ease forwards;}
+.fade-up-1{animation:fadeUp 0.3s 0.05s ease both;}
+.fade-up-2{animation:fadeUp 0.3s 0.1s ease both;}
+.fade-up-3{animation:fadeUp 0.3s 0.15s ease both;}
+.fade-up-4{animation:fadeUp 0.3s 0.2s ease both;}
+.fade-up-5{animation:fadeUp 0.3s 0.25s ease both;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+const T={
+  bg:       '#0A0F1A',
+  surface:  '#111827',
+  card:     '#161E2E',
+  border:   '#1E2D45',
+  input:    '#0D1626',
+  accent:   '#F59E0B',   // amber — construction/contractor vibe
+  accent2:  '#10B981',   // green for success
+  danger:   '#EF4444',
+  blue:     '#3B82F6',
+  text:     '#F1F5F9',
+  muted:    '#64748B',
+  soft:     '#94A3B8',
+};
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+const KEY='buildflow_v1';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||initData();}catch{return initData();}};
+const save=d=>{try{localStorage.setItem(KEY,JSON.stringify(d));}catch{}};
+
+function initData(){
+  return {
+    leads:[
+      {id:'l1',name:'Mike Thornton',phone:'479-555-0123',trade:'Roofing',source:'Facebook',status:'New',value:4200,notes:'Needs full reroof, 2400sqft',created:'2026-03-15',address:'123 Oak St, Bentonville AR'},
+      {id:'l2',name:'Sarah Jenkins',phone:'479-555-0187',trade:'Plumbing',source:'Referral',status:'Quoted',value:850,notes:'Water heater replacement + fixture work',created:'2026-03-17',address:'456 Pine Ave, Rogers AR'},
+      {id:'l3',name:'David Castillo',phone:'479-555-0244',trade:'HVAC',source:'Google',status:'Won',value:6500,notes:'Full HVAC replacement, 2 units',created:'2026-03-10',address:'789 Elm Dr, Springdale AR'},
+    ],
+    jobs:[
+      {id:'j1',client:'David Castillo',trade:'HVAC',status:'In Progress',value:6500,start:'2026-03-18',address:'789 Elm Dr, Springdale AR',notes:'Units on order, install Tuesday'},
+      {id:'j2',client:'Tom Bradley',trade:'Electrical',status:'Scheduled',value:1200,start:'2026-03-22',address:'321 Maple Ln, Fayetteville AR',notes:'Panel upgrade 200amp'},
+    ],
+    invoices:[
+      {id:'i1',client:'David Castillo',amount:6500,status:'Sent',due:'2026-04-01',created:'2026-03-18'},
+      {id:'i2',client:'James Porter',amount:3200,status:'Paid',due:'2026-03-10',created:'2026-03-01'},
+    ],
+  };
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const uid=()=>Math.random().toString(36).slice(2,9);
+const fmt$=n=>n>=1000?`$${(n/1000).toFixed(1)}k`:`$${n}`;
+const today=()=>new Date().toISOString().split('T')[0];
+
+const STATUS_COLORS={
+  'New':       {bg:'#1E3A5F', text:'#60A5FA'},
+  'Contacted': {bg:'#1C2D1C', text:'#4ADE80'},
+  'Quoted':    {bg:'#3B2A00', text:'#FCD34D'},
+  'Won':       {bg:'#064E3B', text:'#34D399'},
+  'Lost':      {bg:'#3B0A0A', text:'#F87171'},
+  'In Progress':{bg:'#1C1C3B', text:'#818CF8'},
+  'Scheduled': {bg:'#1E3A5F', text:'#60A5FA'},
+  'Complete':  {bg:'#064E3B', text:'#34D399'},
+  'Sent':      {bg:'#3B2A00', text:'#FCD34D'},
+  'Paid':      {bg:'#064E3B', text:'#34D399'},
+  'Overdue':   {bg:'#3B0A0A', text:'#F87171'},
+};
+
+const Badge=({status})=>{
+  const c=STATUS_COLORS[status]||{bg:'#1E2D45',text:T.soft};
+  return(
+    <span style={{background:c.bg,color:c.text,fontSize:10,fontWeight:700,
+      padding:'3px 8px',borderRadius:20,letterSpacing:'0.05em',fontFamily:'Barlow Condensed, sans-serif',
+      textTransform:'uppercase'}}>
+      {status}
+    </span>
+  );
+};
+
+const Inp=({label,value,onChange,placeholder,type='text',style:sx={}})=>(
+  <div style={{marginBottom:12}}>
+    {label&&<div style={{fontSize:10,fontWeight:600,color:T.muted,letterSpacing:'0.1em',
+      textTransform:'uppercase',marginBottom:4,fontFamily:'Barlow Condensed, sans-serif'}}>{label}</div>}
+    <input type={type} value={value} onChange={e=>onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{width:'100%',background:T.input,border:`1px solid ${T.border}`,borderRadius:8,
+        padding:'10px 12px',color:T.text,fontSize:14,fontFamily:'Barlow, sans-serif',
+        outline:'none',...sx}}/>
+  </div>
+);
+
+const Sel=({label,value,onChange,options})=>(
+  <div style={{marginBottom:12}}>
+    {label&&<div style={{fontSize:10,fontWeight:600,color:T.muted,letterSpacing:'0.1em',
+      textTransform:'uppercase',marginBottom:4,fontFamily:'Barlow Condensed, sans-serif'}}>{label}</div>}
+    <select value={value} onChange={e=>onChange(e.target.value)}
+      style={{width:'100%',background:T.input,border:`1px solid ${T.border}`,borderRadius:8,
+        padding:'10px 12px',color:T.text,fontSize:14,fontFamily:'Barlow, sans-serif',
+        outline:'none',appearance:'none'}}>
+      {options.map(o=><option key={o} value={o}>{o}</option>)}
+    </select>
+  </div>
+);
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function Modal({title,onClose,children}){
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:100,
+      display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:T.surface,borderRadius:'16px 16px 0 0',width:'100%',maxWidth:480,
+        padding:'20px 18px 40px',animation:'slideIn 0.25s ease',maxHeight:'90vh',overflowY:'auto'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+          <div style={{fontSize:18,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',
+            color:T.text,letterSpacing:'-0.01em'}}>{title}</div>
+          <button onClick={onClose} style={{background:'none',border:'none',color:T.muted,
+            fontSize:22,cursor:'pointer',padding:'0 4px'}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({data}){
+  const totalLeads=data.leads.length;
+  const wonLeads=data.leads.filter(l=>l.status==='Won').length;
+  const pipeline=data.leads.reduce((a,l)=>a+(l.value||0),0);
+  const invoiced=data.invoices.filter(i=>i.status==='Sent').reduce((a,i)=>a+(i.amount||0),0);
+  const collected=data.invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+
+  const stats=[
+    {label:'Pipeline',value:fmt$(pipeline),sub:`${totalLeads} leads`,color:T.accent},
+    {label:'Active Jobs',value:data.jobs.filter(j=>j.status==='In Progress').length,sub:'in progress',color:'#818CF8'},
+    {label:'Invoiced',value:fmt$(invoiced),sub:'awaiting payment',color:T.blue},
+    {label:'Collected',value:fmt$(collected),sub:'this month',color:T.accent2},
+  ];
+
+  const recentLeads=data.leads.slice(-3).reverse();
+  const activeJobs=data.jobs.filter(j=>j.status==='In Progress'||j.status==='Scheduled');
+
+  return(
+    <div>
+      {/* Header */}
+      <div style={{marginBottom:20}} className="fade-up">
+        <div style={{fontSize:11,color:T.muted,fontFamily:'Barlow Condensed, sans-serif',
+          letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:2}}>Good morning</div>
+        <div style={{fontSize:28,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',
+          color:T.text,letterSpacing:'-0.02em',lineHeight:1}}>Dashboard</div>
+      </div>
+
+      {/* Stats grid */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
+        {stats.map((s,i)=>(
+          <div key={s.label} className={`fade-up-${i+1}`}
+            style={{background:T.card,borderRadius:12,padding:'14px 14px',
+              borderTop:`2px solid ${s.color}`}}>
+            <div style={{fontSize:10,color:T.muted,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:4}}>{s.label}</div>
+            <div style={{fontSize:24,fontWeight:800,color:s.color,
+              fontFamily:'Barlow Condensed, sans-serif',lineHeight:1,marginBottom:2}}>{s.value}</div>
+            <div style={{fontSize:11,color:T.muted}}>{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Leads */}
+      <div className="fade-up-3" style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:T.muted,letterSpacing:'0.1em',
+          textTransform:'uppercase',fontFamily:'Barlow Condensed, sans-serif',marginBottom:8}}>
+          Recent Leads
+        </div>
+        {recentLeads.map(lead=>(
+          <div key={lead.id} style={{background:T.card,borderRadius:10,padding:'12px 14px',
+            marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:600,color:T.text,fontFamily:'Barlow, sans-serif',
+                marginBottom:3}}>{lead.name}</div>
+              <div style={{fontSize:12,color:T.muted}}>{lead.trade} · {lead.source}</div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontSize:15,fontWeight:700,color:T.accent,
+                fontFamily:'Barlow Condensed, sans-serif',marginBottom:3}}>{fmt$(lead.value||0)}</div>
+              <Badge status={lead.status}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Active Jobs */}
+      <div className="fade-up-4">
+        <div style={{fontSize:11,fontWeight:700,color:T.muted,letterSpacing:'0.1em',
+          textTransform:'uppercase',fontFamily:'Barlow Condensed, sans-serif',marginBottom:8}}>
+          Active Jobs
+        </div>
+        {activeJobs.length===0&&(
+          <div style={{background:T.card,borderRadius:10,padding:'16px',textAlign:'center',
+            color:T.muted,fontSize:13}}>No active jobs</div>
+        )}
+        {activeJobs.map(job=>(
+          <div key={job.id} style={{background:T.card,borderRadius:10,padding:'12px 14px',
+            marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:600,color:T.text,marginBottom:3}}>{job.client}</div>
+              <div style={{fontSize:12,color:T.muted}}>{job.trade} · {job.start}</div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontSize:15,fontWeight:700,color:T.accent2,
+                fontFamily:'Barlow Condensed, sans-serif',marginBottom:3}}>{fmt$(job.value||0)}</div>
+              <Badge status={job.status}/>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── LEADS ─────────────────────────────────────────────────────────────────────
+function Leads({data,setData}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [filter,setFilter]=useState('All');
+  const [form,setForm]=useState({name:'',phone:'',trade:'Roofing',source:'Facebook',
+    status:'New',value:'',notes:'',address:''});
+
+  const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
+  const sources=['Facebook','Referral','Google','Door Knock','Nextdoor','Other'];
+  const statuses=['New','Contacted','Quoted','Won','Lost'];
+  const filters=['All',...statuses];
+
+  const filtered=filter==='All'?data.leads:data.leads.filter(l=>l.status===filter);
+
+  const addLead=()=>{
+    if(!form.name.trim())return;
+    const next={...data,leads:[...data.leads,{...form,id:uid(),value:parseFloat(form.value)||0,created:today()}]};
+    setData(next);save(next);
+    setForm({name:'',phone:'',trade:'Roofing',source:'Facebook',status:'New',value:'',notes:'',address:''});
+    setShowAdd(false);
+  };
+
+  const updateStatus=(id,status)=>{
+    const next={...data,leads:data.leads.map(l=>l.id===id?{...l,status}:l)};
+    setData(next);save(next);
+  };
+
+  const deleteLead=(id)=>{
+    const next={...data,leads:data.leads.filter(l=>l.id!==id)};
+    setData(next);save(next);
+  };
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}} className="fade-up">
+        <div style={{fontSize:28,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',color:T.text}}>Leads</div>
+        <button onClick={()=>setShowAdd(true)}
+          style={{background:T.accent,border:'none',borderRadius:8,padding:'9px 16px',
+            color:'#000',fontWeight:700,fontSize:13,fontFamily:'Barlow Condensed, sans-serif',
+            letterSpacing:'0.05em',cursor:'pointer'}}>+ ADD LEAD</button>
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{display:'flex',gap:5,marginBottom:14,overflowX:'auto',paddingBottom:4}} className="fade-up-1">
+        {filters.map(f=>(
+          <button key={f} onClick={()=>setFilter(f)}
+            style={{background:filter===f?T.accent:'transparent',
+              border:`1px solid ${filter===f?T.accent:T.border}`,borderRadius:20,
+              padding:'5px 12px',color:filter===f?'#000':T.muted,
+              fontSize:11,fontWeight:700,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.06em',cursor:'pointer',whiteSpace:'nowrap',textTransform:'uppercase'}}>
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* Lead cards */}
+      <div className="fade-up-2">
+        {filtered.length===0&&(
+          <div style={{textAlign:'center',color:T.muted,padding:32,fontSize:13}}>No leads yet. Add your first one!</div>
+        )}
+        {filtered.map(lead=>(
+          <div key={lead.id} style={{background:T.card,borderRadius:12,padding:'14px',
+            marginBottom:8,borderLeft:`3px solid ${(STATUS_COLORS[lead.status]||{}).text||T.border}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+              <div>
+                <div style={{fontSize:16,fontWeight:700,color:T.text,fontFamily:'Barlow Condensed, sans-serif',
+                  letterSpacing:'-0.01em',marginBottom:2}}>{lead.name}</div>
+                <div style={{fontSize:12,color:T.muted}}>{lead.phone}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:18,fontWeight:800,color:T.accent,
+                  fontFamily:'Barlow Condensed, sans-serif',marginBottom:4}}>{fmt$(lead.value||0)}</div>
+                <Badge status={lead.status}/>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
+              {[lead.trade,lead.source,lead.address].filter(Boolean).map((tag,i)=>(
+                <span key={i} style={{background:T.input,color:T.soft,fontSize:11,
+                  padding:'3px 8px',borderRadius:6}}>{tag}</span>
+              ))}
+            </div>
+            {lead.notes&&<div style={{fontSize:12,color:T.muted,marginBottom:8,
+              background:T.input,padding:'8px 10px',borderRadius:6}}>{lead.notes}</div>}
+            {/* Quick status update */}
+            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+              {statuses.filter(s=>s!==lead.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(lead.id,s)}
+                  style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,
+                    padding:'4px 10px',color:T.muted,fontSize:10,fontWeight:600,
+                    fontFamily:'Barlow Condensed, sans-serif',cursor:'pointer',textTransform:'uppercase'}}>
+                  {s}
+                </button>
+              ))}
+              <button onClick={()=>deleteLead(lead.id)}
+                style={{background:'transparent',border:`1px solid #3B0A0A`,borderRadius:6,
+                  padding:'4px 10px',color:'#EF4444',fontSize:10,fontWeight:600,
+                  fontFamily:'Barlow Condensed, sans-serif',cursor:'pointer',marginLeft:'auto'}}>
+                DELETE
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showAdd&&(
+        <Modal title="New Lead" onClose={()=>setShowAdd(false)}>
+          <Inp label="Name" value={form.name} onChange={v=>setForm({...form,name:v})} placeholder="Client name"/>
+          <Inp label="Phone" value={form.phone} onChange={v=>setForm({...form,phone:v})} placeholder="479-555-0000" type="tel"/>
+          <Inp label="Address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="Job address"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Sel label="Trade" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
+            <Sel label="Source" value={form.source} onChange={v=>setForm({...form,source:v})} options={sources}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+            <Inp label="Est. Value $" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="0" type="number"/>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:600,color:T.muted,letterSpacing:'0.1em',
+              textTransform:'uppercase',marginBottom:4,fontFamily:'Barlow Condensed, sans-serif'}}>Notes</div>
+            <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}
+              placeholder="Job details, scope, anything important..."
+              style={{width:'100%',minHeight:70,background:T.input,border:`1px solid ${T.border}`,
+                borderRadius:8,padding:'10px 12px',color:T.text,fontSize:14,
+                fontFamily:'Barlow, sans-serif',outline:'none',resize:'vertical'}}/>
+          </div>
+          <button onClick={addLead}
+            style={{width:'100%',background:T.accent,border:'none',borderRadius:10,padding:'13px',
+              color:'#000',fontWeight:800,fontSize:15,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.05em',cursor:'pointer'}}>
+            SAVE LEAD
+          </button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── JOBS ──────────────────────────────────────────────────────────────────────
+function Jobs({data,setData}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({client:'',trade:'Roofing',status:'Scheduled',
+    value:'',start:today(),address:'',notes:''});
+
+  const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
+  const statuses=['Scheduled','In Progress','Complete','On Hold'];
+
+  const addJob=()=>{
+    if(!form.client.trim())return;
+    const next={...data,jobs:[...data.jobs,{...form,id:uid(),value:parseFloat(form.value)||0}]};
+    setData(next);save(next);
+    setForm({client:'',trade:'Roofing',status:'Scheduled',value:'',start:today(),address:'',notes:''});
+    setShowAdd(false);
+  };
+
+  const updateStatus=(id,status)=>{
+    const next={...data,jobs:data.jobs.map(j=>j.id===id?{...j,status}:j)};
+    setData(next);save(next);
+  };
+
+  const totalValue=data.jobs.reduce((a,j)=>a+(j.value||0),0);
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}} className="fade-up">
+        <div>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',color:T.text}}>Jobs</div>
+          <div style={{fontSize:12,color:T.muted}}>{data.jobs.length} total · {fmt$(totalValue)} value</div>
+        </div>
+        <button onClick={()=>setShowAdd(true)}
+          style={{background:T.accent,border:'none',borderRadius:8,padding:'9px 16px',
+            color:'#000',fontWeight:700,fontSize:13,fontFamily:'Barlow Condensed, sans-serif',
+            letterSpacing:'0.05em',cursor:'pointer'}}>+ ADD JOB</button>
+      </div>
+
+      <div className="fade-up-1">
+        {data.jobs.length===0&&(
+          <div style={{textAlign:'center',color:T.muted,padding:32,fontSize:13}}>No jobs yet.</div>
+        )}
+        {data.jobs.map(job=>(
+          <div key={job.id} style={{background:T.card,borderRadius:12,padding:'14px',
+            marginBottom:8,borderLeft:`3px solid ${(STATUS_COLORS[job.status]||{}).text||T.border}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+              <div>
+                <div style={{fontSize:16,fontWeight:700,color:T.text,
+                  fontFamily:'Barlow Condensed, sans-serif',marginBottom:2}}>{job.client}</div>
+                <div style={{fontSize:12,color:T.muted}}>{job.trade} · Start: {job.start}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:18,fontWeight:800,color:T.accent2,
+                  fontFamily:'Barlow Condensed, sans-serif',marginBottom:4}}>{fmt$(job.value||0)}</div>
+                <Badge status={job.status}/>
+              </div>
+            </div>
+            {job.address&&<div style={{fontSize:12,color:T.muted,marginBottom:6}}>📍 {job.address}</div>}
+            {job.notes&&<div style={{fontSize:12,color:T.muted,marginBottom:8,
+              background:T.input,padding:'8px 10px',borderRadius:6}}>{job.notes}</div>}
+            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+              {statuses.filter(s=>s!==job.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(job.id,s)}
+                  style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,
+                    padding:'4px 10px',color:T.muted,fontSize:10,fontWeight:600,
+                    fontFamily:'Barlow Condensed, sans-serif',cursor:'pointer',textTransform:'uppercase'}}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showAdd&&(
+        <Modal title="New Job" onClose={()=>setShowAdd(false)}>
+          <Inp label="Client Name" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="Client name"/>
+          <Inp label="Address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="Job site address"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Sel label="Trade" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
+            <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Inp label="Value $" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="0" type="number"/>
+            <Inp label="Start Date" value={form.start} onChange={v=>setForm({...form,start:v})} type="date"/>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:600,color:T.muted,letterSpacing:'0.1em',
+              textTransform:'uppercase',marginBottom:4,fontFamily:'Barlow Condensed, sans-serif'}}>Notes</div>
+            <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}
+              placeholder="Scope, materials, crew notes..."
+              style={{width:'100%',minHeight:70,background:T.input,border:`1px solid ${T.border}`,
+                borderRadius:8,padding:'10px 12px',color:T.text,fontSize:14,
+                fontFamily:'Barlow, sans-serif',outline:'none',resize:'vertical'}}/>
+          </div>
+          <button onClick={addJob}
+            style={{width:'100%',background:T.accent,border:'none',borderRadius:10,padding:'13px',
+              color:'#000',fontWeight:800,fontSize:15,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.05em',cursor:'pointer'}}>
+            SAVE JOB
+          </button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── INVOICES ──────────────────────────────────────────────────────────────────
+function Invoices({data,setData}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({client:'',amount:'',status:'Draft',due:'',created:today()});
+  const statuses=['Draft','Sent','Paid','Overdue'];
+
+  const totalPaid=data.invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
+  const totalOwed=data.invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
+
+  const addInvoice=()=>{
+    if(!form.client.trim())return;
+    const next={...data,invoices:[...data.invoices,{...form,id:uid(),amount:parseFloat(form.amount)||0}]};
+    setData(next);save(next);
+    setForm({client:'',amount:'',status:'Draft',due:'',created:today()});
+    setShowAdd(false);
+  };
+
+  const updateStatus=(id,status)=>{
+    const next={...data,invoices:data.invoices.map(i=>i.id===id?{...i,status}:i)};
+    setData(next);save(next);
+  };
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}} className="fade-up">
+        <div>
+          <div style={{fontSize:28,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',color:T.text}}>Invoices</div>
+          <div style={{fontSize:12,color:T.muted}}>{fmt$(totalOwed)} owed · {fmt$(totalPaid)} collected</div>
+        </div>
+        <button onClick={()=>setShowAdd(true)}
+          style={{background:T.accent,border:'none',borderRadius:8,padding:'9px 16px',
+            color:'#000',fontWeight:700,fontSize:13,fontFamily:'Barlow Condensed, sans-serif',
+            letterSpacing:'0.05em',cursor:'pointer'}}>+ CREATE</button>
+      </div>
+
+      {/* Summary cards */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}} className="fade-up-1">
+        {[
+          {label:'Outstanding',value:fmt$(totalOwed),color:T.accent},
+          {label:'Collected',value:fmt$(totalPaid),color:T.accent2},
+        ].map(s=>(
+          <div key={s.label} style={{background:T.card,borderRadius:10,padding:'12px',
+            borderTop:`2px solid ${s.color}`}}>
+            <div style={{fontSize:9,color:T.muted,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3}}>{s.label}</div>
+            <div style={{fontSize:22,fontWeight:800,color:s.color,
+              fontFamily:'Barlow Condensed, sans-serif'}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="fade-up-2">
+        {data.invoices.map(inv=>(
+          <div key={inv.id} style={{background:T.card,borderRadius:12,padding:'14px',
+            marginBottom:8,borderLeft:`3px solid ${(STATUS_COLORS[inv.status]||{}).text||T.border}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+              <div>
+                <div style={{fontSize:16,fontWeight:700,color:T.text,
+                  fontFamily:'Barlow Condensed, sans-serif',marginBottom:2}}>{inv.client}</div>
+                <div style={{fontSize:12,color:T.muted}}>
+                  Created {inv.created}{inv.due?` · Due ${inv.due}`:''}
+                </div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:20,fontWeight:800,color:T.accent,
+                  fontFamily:'Barlow Condensed, sans-serif',marginBottom:4}}>{fmt$(inv.amount||0)}</div>
+                <Badge status={inv.status}/>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+              {statuses.filter(s=>s!==inv.status).map(s=>(
+                <button key={s} onClick={()=>updateStatus(inv.id,s)}
+                  style={{background:'transparent',border:`1px solid ${T.border}`,borderRadius:6,
+                    padding:'4px 10px',color:T.muted,fontSize:10,fontWeight:600,
+                    fontFamily:'Barlow Condensed, sans-serif',cursor:'pointer',textTransform:'uppercase'}}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showAdd&&(
+        <Modal title="New Invoice" onClose={()=>setShowAdd(false)}>
+          <Inp label="Client Name" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="Client name"/>
+          <Inp label="Amount $" value={form.amount} onChange={v=>setForm({...form,amount:v})} placeholder="0" type="number"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+            <Inp label="Due Date" value={form.due} onChange={v=>setForm({...form,due:v})} type="date"/>
+          </div>
+          <button onClick={addInvoice}
+            style={{width:'100%',background:T.accent,border:'none',borderRadius:10,padding:'13px',
+              color:'#000',fontWeight:800,fontSize:15,fontFamily:'Barlow Condensed, sans-serif',
+              letterSpacing:'0.05em',cursor:'pointer',marginTop:4}}>
+            CREATE INVOICE
+          </button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+export default function App(){
+  const [screen,setScreen]=useState('dashboard');
+  const [data,setData]=useState(()=>load());
+
+  const NAV=[
+    {id:'dashboard', label:'Home',    icon:'⚡'},
+    {id:'leads',     label:'Leads',   icon:'🎯'},
+    {id:'jobs',      label:'Jobs',    icon:'🔨'},
+    {id:'invoices',  label:'Money',   icon:'💰'},
+  ];
+
+  return(
+    <div style={{maxWidth:430,margin:'0 auto',minHeight:'100vh',minHeight:'100dvh',
+      background:T.bg,color:T.text,
+      fontFamily:'Barlow, sans-serif',
+      display:'flex',flexDirection:'column'}}>
+
+      {/* Header */}
+      <div style={{background:T.surface,padding:'52px 18px 12px',
+        borderBottom:`1px solid ${T.border}`,position:'sticky',top:0,zIndex:10}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{background:T.accent,borderRadius:8,width:32,height:32,
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontSize:16,fontWeight:900}}>🔧</div>
+            <div>
+              <div style={{fontSize:9,color:T.muted,fontFamily:'Barlow Condensed, sans-serif',
+                letterSpacing:'0.16em',textTransform:'uppercase',lineHeight:1}}>BuildFlow</div>
+              <div style={{fontSize:18,fontWeight:800,fontFamily:'Barlow Condensed, sans-serif',
+                color:T.text,lineHeight:1.1,letterSpacing:'-0.01em'}}>
+                {NAV.find(n=>n.id===screen)?.label}
+              </div>
+            </div>
+          </div>
+          <div style={{background:T.card,borderRadius:8,padding:'5px 10px',
+            fontSize:11,color:T.muted,fontWeight:600,fontFamily:'Barlow Condensed, sans-serif',
+            letterSpacing:'0.05em'}}>
+            NWA PRO
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:'auto',padding:'16px 14px 90px',
+        WebkitOverflowScrolling:'touch'}}>
+        {screen==='dashboard'&&<Dashboard data={data}/>}
+        {screen==='leads'    &&<Leads     data={data} setData={setData}/>}
+        {screen==='jobs'     &&<Jobs      data={data} setData={setData}/>}
+        {screen==='invoices' &&<Invoices  data={data} setData={setData}/>}
+      </div>
+
+      {/* Bottom Nav */}
+      <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',
+        width:'100%',maxWidth:430,background:T.surface,
+        borderTop:`1px solid ${T.border}`,display:'flex',
+        padding:'8px 0 28px',zIndex:10}}>
+        {NAV.map(n=>(
+          <button key={n.id} onClick={()=>setScreen(n.id)}
+            style={{flex:1,background:'none',border:'none',cursor:'pointer',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:2,
+              fontFamily:'Barlow Condensed, sans-serif',padding:'4px 0'}}>
+            <div style={{fontSize:20}}>{n.icon}</div>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',
+              textTransform:'uppercase',transition:'color 0.2s',
+              color:screen===n.id?T.accent:T.muted}}>{n.label}</div>
+            {screen===n.id&&<div style={{width:20,height:3,background:T.accent,borderRadius:2,marginTop:1}}/>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
