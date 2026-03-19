@@ -63,21 +63,7 @@ const uid=()=>Math.random().toString(36).slice(2,8);
 const today=()=>new Date().toISOString().split('T')[0];
 const fmt$=n=>n>=1000?`$${(n/1000).toFixed(1)}k`:`$${n||0}`;
 
-function seed(){return{
-  leads:[
-    {id:'l1',name:'Mike Thornton',phone:'479-555-0123',trade:'Roofing',source:'Facebook',status:'New',value:4200,notes:'Full reroof, 2400sqft. Wants estimate by Friday.',address:'123 Oak St, Bentonville AR',created:'2026-03-15'},
-    {id:'l2',name:'Sarah Jenkins',phone:'479-555-0187',trade:'Plumbing',source:'Referral',status:'Quoted',value:850,notes:'Water heater replacement + fixture work',address:'456 Pine Ave, Rogers AR',created:'2026-03-17'},
-    {id:'l3',name:'David Castillo',phone:'479-555-0244',trade:'HVAC',source:'Google',status:'Won',value:6500,notes:'Full HVAC replacement, 2 units',address:'789 Elm Dr, Springdale AR',created:'2026-03-10'},
-  ],
-  jobs:[
-    {id:'j1',client:'David Castillo',trade:'HVAC',status:'In Progress',value:6500,start:'2026-03-18',address:'789 Elm Dr, Springdale AR',notes:'Units on order, install Tuesday'},
-    {id:'j2',client:'Tom Bradley',trade:'Electrical',status:'Scheduled',value:1200,start:'2026-03-22',address:'321 Maple Ln, Fayetteville AR',notes:'Panel upgrade 200amp'},
-  ],
-  invoices:[
-    {id:'i1',client:'David Castillo',amount:6500,status:'Sent',due:'2026-04-01',created:'2026-03-18'},
-    {id:'i2',client:'James Porter',amount:3200,status:'Paid',due:'2026-03-10',created:'2026-03-01'},
-  ],
-};}
+function seed(){return{leads:[],jobs:[],invoices:[]};}
 
 const STATUS={
   'New':        {color:C.blue,  bg:C.blueBg},
