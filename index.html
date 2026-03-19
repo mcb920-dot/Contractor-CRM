@@ -595,7 +595,7 @@ function Invoices({data,setData}){
 }
 
 // ── APP ───────────────────────────────────────────────────────────────────────
-export default function App(){
+function App(){
   const [screen,setScreen]=useState('dashboard');
   const [data,setData]=useState(()=>load());
 
