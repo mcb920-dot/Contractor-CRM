@@ -152,15 +152,12 @@ function AuthScreen({onAuth}){
       const{error:e}=await supabase.auth.signInWithPassword({email,password});
       if(e)setError(e.message);
     } else {
-      const{data,error:e}=await supabase.auth.signUp({email,password});
+      const{data,error:e}=await supabase.auth.signUp({
+        email,password,
+        options:{data:{full_name:name,business_name:biz}}
+      });
       if(e){setError(e.message);}
-      else if(data.user){
-        await supabase.from('profiles').insert({
-          id:data.user.id,
-          full_name:name,
-          business_name:biz,
-          slug:biz.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').slice(0,30)+'-'+data.user.id.slice(0,6),
-        });
+      else{
         setSuccess('Account created! Check your email to confirm, then log in.');
         setMode('login');
       }
@@ -853,4 +850,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
