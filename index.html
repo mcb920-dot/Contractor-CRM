@@ -190,7 +190,7 @@ function AuthScreen({onAuth}){
         <Inp label="Business name" value={biz} onChange={setBiz} placeholder="Johnson Roofing"/>
       </>}
       <Inp label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/>
-      <Inp label="Password" value={password} onChange={setPassword} placeholder="••••••••" type="password"/>
+      <Inp label="Password" value={password} onChange={setPassword} placeholder="••••••••" type="password" onKeyDown={e=>e.key==='Enter'&&submit()}/>
 
       <Btn onClick={submit} loading={loading} style={{width:'100%',padding:'11px',marginBottom:14,marginTop:4}}>
         {mode==='login'?'Sign in':'Create account'}
