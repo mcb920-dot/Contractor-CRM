@@ -757,7 +757,7 @@ function App(){
   const loadData=async(uid)=>{
     setLoading(true);
     const[p,l,j,i]=await Promise.all([
-      supabase.from('profiles').select('*').eq('id',uid).maybeSingle(),,
+      supabase.from('profiles').select('*').eq('id',uid).maybeSingle(),
       supabase.from('leads').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
       supabase.from('jobs').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
       supabase.from('invoices').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
