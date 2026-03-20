@@ -255,18 +255,28 @@ function Dashboard({leads,jobs,invoices,profile}){
       </div>
 
       {/* Lead capture link */}
-      {profile?.slug&&(
+      {profile?.slug&&(()=>{
+        const [copied,setCopied]=useState(false);
+        const url=`${window.location.origin}/quote/${profile.slug}`;
+        const copy=()=>{navigator.clipboard.writeText(url).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});};
+        return(
         <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,
           borderRadius:12,padding:'14px 16px',marginBottom:16}}>
           <p style={{fontSize:12,fontWeight:500,color:C.muted,textTransform:'uppercase',
             letterSpacing:'0.04em',marginBottom:8}}>Your Lead Capture Link</p>
           <div style={{background:C.bg,borderRadius:8,padding:'9px 12px',marginBottom:10,
             fontSize:12,color:C.blue,wordBreak:'break-all',fontFamily:'monospace'}}>
-            {window.location.origin}/quote/{profile.slug}
+            {url}
           </div>
-          <p style={{fontSize:12,color:C.muted}}>Share this link — customers fill it out and leads appear here instantly.</p>
+          <div style={{display:'flex',gap:8}}>
+            <Btn onClick={copy} style={{flex:1,padding:'8px',fontSize:12}}>
+              {copied?'Copied!':'Copy Link'}
+            </Btn>
+          </div>
+          <p style={{fontSize:12,color:C.muted,marginTop:8}}>Share this link — customers fill it out and leads appear here instantly.</p>
         </div>
-      )}
+        );
+      })()}}
 
       {leads.slice(-3).reverse().length>0&&(
         <div className="fu3">
