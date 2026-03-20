@@ -84,7 +84,8 @@ const Inp=({label,value,onChange,placeholder,type='text',style:sx={},onKeyDown})
       style={{width:'100%',background:C.white,border:`1px solid ${C.border}`,borderRadius:8,
         padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',...sx}}
       onFocus={e=>e.target.style.borderColor=C.blue}
-      onBlur={e=>e.target.style.borderColor=C.border}/>
+      onBlur={e=>e.target.style.borderColor=C.border}
+onKeyDown={onKeyDown}/>
   </div>
 );
 
