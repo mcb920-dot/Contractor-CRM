@@ -762,10 +762,10 @@ function App(){
       supabase.from('jobs').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
       supabase.from('invoices').select('*').eq('user_id',uid).order('created_at',{ascending:false}),
     ]);
-    setProfile(p.data);
-    setLeads(l.data||[]);
-    setJobs(j.data||[]);
-    setInvoices(i.data||[]);
+    setProfile(p?.data);
+    setLeads(l?.data||[]);
+    setJobs(j?.data||[]);
+    setInvoices(i?.data||[]);
     setLoading(false);
   };
 
