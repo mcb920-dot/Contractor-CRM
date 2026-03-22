@@ -833,7 +833,7 @@ function App(){
         </div>
       </div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 100px',WebkitOverflowScrolling:'touch'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 160px',WebkitOverflowScrolling:'touch'}}>
         {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile}/>}
         {screen==='leads'    &&<Leads leads={leads} setLeads={setLeads} userId={session.user.id}/>}
         {screen==='jobs'     &&<Jobs  jobs={jobs}   setJobs={setJobs}   userId={session.user.id}/>}
