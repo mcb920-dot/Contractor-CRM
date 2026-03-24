@@ -331,11 +331,12 @@ function Leads({leads,setLeads,setJobs,userId}){
 
   // KEY CHANGE: when status flips to Won, auto-create a Job
   const updateStatus=async(id,status)=>{
+    const lead=leads.find(l=>l.id===id);
+    if(!lead || lead.status===status) return; // guard: no-op if already this status
     await supabase.from('leads').update({status}).eq('id',id);
     setLeads(prev=>prev.map(l=>l.id===id?{...l,status}:l));
 
     if(status==='Won'){
-      const lead=leads.find(l=>l.id===id);
       if(lead){
         const newJob={
           client: lead.name,
@@ -351,7 +352,7 @@ function Leads({leads,setLeads,setJobs,userId}){
         const{data:jobData,error:jobErr}=await supabase.from('jobs').insert(newJob).select().single();
         if(!jobErr && jobData){
           setJobs(prev=>[jobData,...prev]);
-          alert(`✅ Lead won! Job created for ${lead.name}.`);
+          console.log('Job created for', lead.name);
         }
       }
     }
@@ -425,9 +426,7 @@ function Leads({leads,setLeads,setJobs,userId}){
                     border:`1px solid ${s==='Won'?C.green:C.border}`,borderRadius:6,
                     padding:'4px 10px',
                     color:s==='Won'?C.green:C.muted,fontSize:11,fontWeight:s==='Won'?600:500,
-                    fontFamily:'inherit',cursor:'pointer'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Won'?C.green:C.border;e.currentTarget.style.color=s==='Won'?C.green:C.muted;}}>
+                    fontFamily:'inherit',cursor:'pointer'}}>
                   {s==='Won'?'✓ Won':s}
                 </button>
               ))}
@@ -494,11 +493,12 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
 
   // KEY CHANGE: when status flips to Complete, auto-create an Invoice
   const updateStatus=async(id,status)=>{
+    const job=jobs.find(j=>j.id===id);
+    if(!job || job.status===status) return; // guard: no-op if already this status
     await supabase.from('jobs').update({status}).eq('id',id);
     setJobs(prev=>prev.map(j=>j.id===id?{...j,status}:j));
 
     if(status==='Complete'){
-      const job=jobs.find(j=>j.id===id);
       if(job){
         const newInvoice={
           client:    job.client,
@@ -511,7 +511,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
         const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
         if(!invErr && invData){
           setInvoices(prev=>[invData,...prev]);
-          alert(`🧾 Job complete! Invoice created for ${job.client}.`);
+          console.log('Invoice created for', job.client);
         }
       }
     }
@@ -560,9 +560,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                     border:`1px solid ${s==='Complete'?C.green:C.border}`,borderRadius:6,
                     padding:'4px 10px',
                     color:s==='Complete'?C.green:C.muted,fontSize:11,fontWeight:s==='Complete'?600:500,
-                    fontFamily:'inherit',cursor:'pointer'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Complete'?C.green:C.border;e.currentTarget.style.color=s==='Complete'?C.green:C.muted;}}>
+                    fontFamily:'inherit',cursor:'pointer'}}>
                   {s==='Complete'?'✓ Complete':s}
                 </button>
               ))}
@@ -671,9 +669,7 @@ function Invoices({invoices,setInvoices,userId}){
                     border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,
                     padding:'4px 10px',
                     color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,
-                    fontFamily:'inherit',cursor:'pointer'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Paid'?C.green:C.border;e.currentTarget.style.color=s==='Paid'?C.green:C.muted;}}>
+                    fontFamily:'inherit',cursor:'pointer'}}>
                   {s==='Paid'?'✓ Paid':s}
                 </button>
               ))}
@@ -807,7 +803,8 @@ function App(){
       if(session) loadData(session.user.id);
       else setLoading(false);
     });
-    const{data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==='INITIAL_SESSION') return; // skip — already handled by getSession above
       setSession(session);
       if(session)loadData(session.user.id);
       else{setLoading(false);setLeads([]);setJobs([]);setInvoices([]);}
