@@ -499,7 +499,6 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
           client:    job.client,
           amount:    job.value||0,
           status:    'Draft',
-          due_date:  '',
           user_id:   userId,
         };
         const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
