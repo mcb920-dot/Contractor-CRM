@@ -85,7 +85,7 @@ const Inp=({label,value,onChange,placeholder,type='text',style:sx={},onKeyDown})
         padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',...sx}}
       onFocus={e=>e.target.style.borderColor=C.blue}
       onBlur={e=>e.target.style.borderColor=C.border}
-onKeyDown={onKeyDown}/>
+      onKeyDown={onKeyDown}/>
   </div>
 );
 
@@ -254,7 +254,6 @@ function Dashboard({leads,jobs,invoices,profile}){
         ))}
       </div>
 
-      {/* Lead capture link */}
       {profile?.slug&&(()=>{
         const [copied,setCopied]=useState(false);
         const url=`${window.location.origin}/quote/${profile.slug}`;
@@ -307,7 +306,8 @@ function Dashboard({leads,jobs,invoices,profile}){
 }
 
 // ── LEADS ─────────────────────────────────────────────────────────────────────
-function Leads({leads,setLeads,userId}){
+// NOW RECEIVES setJobs so Won leads auto-create a job
+function Leads({leads,setLeads,setJobs,userId}){
   const [showAdd,setShowAdd]=useState(false);
   const [filter,setFilter]=useState('All');
   const [loading,setLoading]=useState(false);
@@ -329,9 +329,32 @@ function Leads({leads,setLeads,userId}){
     setForm(blank);setShowAdd(false);setLoading(false);
   };
 
+  // KEY CHANGE: when status flips to Won, auto-create a Job
   const updateStatus=async(id,status)=>{
     await supabase.from('leads').update({status}).eq('id',id);
     setLeads(prev=>prev.map(l=>l.id===id?{...l,status}:l));
+
+    if(status==='Won'){
+      const lead=leads.find(l=>l.id===id);
+      if(lead){
+        const newJob={
+          client: lead.name,
+          trade:  lead.trade,
+          status: 'Scheduled',
+          value:  lead.value||0,
+          start_date: today(),
+          address: lead.address||'',
+          notes:  lead.notes||'',
+          user_id: userId,
+          lead_id: lead.id,
+        };
+        const{data:jobData,error:jobErr}=await supabase.from('jobs').insert(newJob).select().single();
+        if(!jobErr && jobData){
+          setJobs(prev=>[jobData,...prev]);
+          alert(`✅ Lead won! Job created for ${lead.name}.`);
+        }
+      }
+    }
   };
 
   const del=async(id)=>{
@@ -398,12 +421,14 @@ function Leads({leads,setLeads,userId}){
             <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingLeft:48,alignItems:'center'}}>
               {statuses.filter(s=>s!==lead.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(lead.id,s)}
-                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                  style={{background:s==='Won'?C.greenBg:C.bg,
+                    border:`1px solid ${s==='Won'?C.green:C.border}`,borderRadius:6,
+                    padding:'4px 10px',
+                    color:s==='Won'?C.green:C.muted,fontSize:11,fontWeight:s==='Won'?600:500,
                     fontFamily:'inherit',cursor:'pointer'}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                  {s}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Won'?C.green:C.border;e.currentTarget.style.color=s==='Won'?C.green:C.muted;}}>
+                  {s==='Won'?'✓ Won':s}
                 </button>
               ))}
               <button onClick={()=>del(lead.id)}
@@ -448,7 +473,8 @@ function Leads({leads,setLeads,userId}){
 }
 
 // ── JOBS ──────────────────────────────────────────────────────────────────────
-function Jobs({jobs,setJobs,userId}){
+// NOW RECEIVES setInvoices so Complete jobs auto-create an invoice
+function Jobs({jobs,setJobs,setInvoices,userId}){
   const [showAdd,setShowAdd]=useState(false);
   const [loading,setLoading]=useState(false);
   const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start_date:today(),address:'',notes:''};
@@ -466,9 +492,29 @@ function Jobs({jobs,setJobs,userId}){
     setForm(blank);setShowAdd(false);setLoading(false);
   };
 
+  // KEY CHANGE: when status flips to Complete, auto-create an Invoice
   const updateStatus=async(id,status)=>{
     await supabase.from('jobs').update({status}).eq('id',id);
     setJobs(prev=>prev.map(j=>j.id===id?{...j,status}:j));
+
+    if(status==='Complete'){
+      const job=jobs.find(j=>j.id===id);
+      if(job){
+        const newInvoice={
+          client:    job.client,
+          amount:    job.value||0,
+          status:    'Draft',
+          due_date:  '',
+          user_id:   userId,
+          job_id:    job.id,
+        };
+        const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
+        if(!invErr && invData){
+          setInvoices(prev=>[invData,...prev]);
+          alert(`🧾 Job complete! Invoice created for ${job.client}.`);
+        }
+      }
+    }
   };
 
   const total=jobs.reduce((a,j)=>a+(j.value||0),0);
@@ -510,12 +556,14 @@ function Jobs({jobs,setJobs,userId}){
             <div style={{display:'flex',gap:6,paddingLeft:48}}>
               {statuses.filter(s=>s!==job.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(job.id,s)}
-                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                  style={{background:s==='Complete'?C.greenBg:C.bg,
+                    border:`1px solid ${s==='Complete'?C.green:C.border}`,borderRadius:6,
+                    padding:'4px 10px',
+                    color:s==='Complete'?C.green:C.muted,fontSize:11,fontWeight:s==='Complete'?600:500,
                     fontFamily:'inherit',cursor:'pointer'}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                  {s}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Complete'?C.green:C.border;e.currentTarget.style.color=s==='Complete'?C.green:C.muted;}}>
+                  {s==='Complete'?'✓ Complete':s}
                 </button>
               ))}
             </div>
@@ -619,12 +667,14 @@ function Invoices({invoices,setInvoices,userId}){
             <div style={{display:'flex',gap:6,paddingLeft:48}}>
               {statuses.filter(s=>s!==inv.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(inv.id,s)}
-                  style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:6,
-                    padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                  style={{background:s==='Paid'?C.greenBg:C.bg,
+                    border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,
+                    padding:'4px 10px',
+                    color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,
                     fontFamily:'inherit',cursor:'pointer'}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                  {s}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=s==='Paid'?C.green:C.border;e.currentTarget.style.color=s==='Paid'?C.green:C.muted;}}>
+                  {s==='Paid'?'✓ Paid':s}
                 </button>
               ))}
             </div>
@@ -751,12 +801,12 @@ function App(){
   const quoteMatch=path.match(/^\/quote\/(.+)/);
 
   useEffect(()=>{
-  if(quoteMatch) return; // ← add this line at the top
-  supabase.auth.getSession().then(({data:{session}})=>{
-    setSession(session);
-    if(session) loadData(session.user.id);
-    else setLoading(false);
-  });
+    if(quoteMatch) return;
+    supabase.auth.getSession().then(({data:{session}})=>{
+      setSession(session);
+      if(session) loadData(session.user.id);
+      else setLoading(false);
+    });
     const{data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{
       setSession(session);
       if(session)loadData(session.user.id);
@@ -835,8 +885,8 @@ function App(){
 
       <div style={{flex:1,overflowY:'auto',padding:'20px 16px 160px',WebkitOverflowScrolling:'touch'}}>
         {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile}/>}
-        {screen==='leads'    &&<Leads leads={leads} setLeads={setLeads} userId={session.user.id}/>}
-        {screen==='jobs'     &&<Jobs  jobs={jobs}   setJobs={setJobs}   userId={session.user.id}/>}
+        {screen==='leads'    &&<Leads leads={leads} setLeads={setLeads} setJobs={setJobs} userId={session.user.id}/>}
+        {screen==='jobs'     &&<Jobs  jobs={jobs}   setJobs={setJobs}   setInvoices={setInvoices} userId={session.user.id}/>}
         {screen==='invoices' &&<Invoices invoices={invoices} setInvoices={setInvoices} userId={session.user.id}/>}
       </div>
 
