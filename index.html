@@ -209,7 +209,7 @@ function Dashboard({leads,jobs,invoices,profile}){
   const collected=invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
   const owed=invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
   const activeJobs=jobs.filter(j=>j.status==='In Progress'||j.status==='Scheduled');
-  const newLeads=leads.filter(l=>l.status==='New').length;
+  const newLeads=leads.filter(l=>l.status==='New'&&l.status!=='Won').length;
 
   return(
     <div>
@@ -272,12 +272,12 @@ function Dashboard({leads,jobs,invoices,profile}){
         );
       })()}
 
-      {leads.slice(-3).reverse().length>0&&(
+      {leads.filter(l=>l.status!=='Won'&&l.status!=='Lost').slice(-3).reverse().length>0&&(
         <div className="fu3">
           <p style={{fontSize:12,fontWeight:500,color:C.muted,letterSpacing:'0.04em',
             textTransform:'uppercase',marginBottom:10}}>Recent Leads</p>
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
-            {leads.slice(-3).reverse().map((lead,i,arr)=>(
+            {leads.filter(l=>l.status!=='Won'&&l.status!=='Lost').slice(-3).reverse().map((lead,i,arr)=>(
               <div key={lead.id} style={{padding:'13px 16px',
                 borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',
                 display:'flex',alignItems:'center',gap:12}}>
