@@ -708,6 +708,52 @@ function Invoices({invoices,setInvoices,userId}){
         const paidList=invoices.filter(i=>i.status==='Paid');
         const [showPaid,setShowPaid]=useState(false);
         return(<>
+          {/* Paid folder at TOP */}
+          {paidList.length>0&&(
+            <div style={{marginBottom:16}}>
+              <button onClick={()=>setShowPaid(p=>!p)}
+                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',
+                  background:C.greenBg,border:`1px solid #A7F3D0`,borderRadius:showPaid?'12px 12px 0 0':12,
+                  padding:'14px 16px',cursor:'pointer',fontFamily:'inherit'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{fontSize:16}}>✅</span>
+                  <span style={{fontSize:14,fontWeight:600,color:C.green}}>Paid Invoices</span>
+                  <span style={{background:C.green,color:'#fff',fontSize:11,fontWeight:600,
+                    padding:'2px 8px',borderRadius:20}}>{paidList.length}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontSize:14,fontWeight:600,color:C.green}}>{fmt$(paidList.reduce((a,i)=>a+(i.amount||0),0))}</span>
+                  <span style={{color:C.green,fontSize:12}}>{showPaid?'▲':'▼'}</span>
+                </div>
+              </button>
+              {showPaid&&(
+                <div style={{background:C.white,border:`1px solid ${C.border}`,
+                  borderRadius:'0 0 12px 12px',overflow:'hidden',marginBottom:4}}>
+                  {paidList.map((inv,i,arr)=>(
+                    <div key={inv.id} style={{padding:'14px 16px',
+                      borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:12}}>
+                        <Avatar name={inv.client}/>
+                        <div style={{flex:1}}>
+                          <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+                            <div>
+                              <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{inv.client}</p>
+                              <p style={{fontSize:12,color:C.muted}}>{inv.due_date?`Paid ${inv.due_date}`:'Paid'}</p>
+                            </div>
+                            <div style={{textAlign:'right',flexShrink:0}}>
+                              <p style={{fontSize:16,fontWeight:600,color:C.green}}>{fmt$(inv.amount)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Active invoices below */}
           <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden',marginBottom:20}}>
             {active.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No open invoices.</div>}
             {active.map((inv,i,arr)=>(
@@ -744,50 +790,7 @@ function Invoices({invoices,setInvoices,userId}){
             ))}
           </div>
 
-          {/* Paid folder */}
-          {paidList.length>0&&(
-            <div style={{marginBottom:20}}>
-              <button onClick={()=>setShowPaid(p=>!p)}
-                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',
-                  background:C.greenBg,border:`1px solid #A7F3D0`,borderRadius:12,
-                  padding:'14px 16px',cursor:'pointer',fontFamily:'inherit'}}>
-                <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <span style={{fontSize:16}}>✅</span>
-                  <span style={{fontSize:14,fontWeight:600,color:C.green}}>Paid Invoices</span>
-                  <span style={{background:C.green,color:'#fff',fontSize:11,fontWeight:600,
-                    padding:'2px 8px',borderRadius:20}}>{paidList.length}</span>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontSize:14,fontWeight:600,color:C.green}}>{fmt$(paidList.reduce((a,i)=>a+(i.amount||0),0))}</span>
-                  <span style={{color:C.green,fontSize:12}}>{showPaid?'▲':'▼'}</span>
-                </div>
-              </button>
-              {showPaid&&(
-                <div style={{background:C.white,border:`1px solid ${C.border}`,
-                  borderRadius:'0 0 12px 12px',overflow:'hidden',marginTop:-1}}>
-                  {paidList.map((inv,i,arr)=>(
-                    <div key={inv.id} style={{padding:'14px 16px',
-                      borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:12}}>
-                        <Avatar name={inv.client}/>
-                        <div style={{flex:1}}>
-                          <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-                            <div>
-                              <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2}}>{inv.client}</p>
-                              <p style={{fontSize:12,color:C.muted}}>{inv.due_date?`Paid ${inv.due_date}`:'Paid'}</p>
-                            </div>
-                            <div style={{textAlign:'right',flexShrink:0}}>
-                              <p style={{fontSize:16,fontWeight:600,color:C.green}}>{fmt$(inv.amount)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+
         </>);
       })()}
 
