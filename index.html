@@ -324,32 +324,34 @@ function Leads({leads,setLeads,setJobs,userId}){
     setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  // KEY CHANGE: when status flips to Won, auto-create a Job
   const updateStatus=async(id,status)=>{
     const lead=leads.find(l=>l.id===id);
-    if(!lead || lead.status===status) return; // guard: no-op if already this status
-    await supabase.from('leads').update({status}).eq('id',id);
-    setLeads(prev=>prev.map(l=>l.id===id?{...l,status}:l));
+    if(!lead || lead.status===status) return;
 
     if(status==='Won'){
-      if(lead){
-        const newJob={
-          client: lead.name,
-          trade:  lead.trade,
-          status: 'Scheduled',
-          value:  lead.value||0,
-          start_date: today(),
-          address: lead.address||'',
-          notes:  lead.notes||'',
-          user_id: userId,
-        };
-        const{data:jobData,error:jobErr}=await supabase.from('jobs').insert(newJob).select().single();
-        if(jobErr){
-          console.error('Job creation failed:', jobErr.message);
-        } else if(jobData){
-          setJobs(prev=>[jobData,...prev]);
-        }
+      // Create job then remove lead from leads list
+      const newJob={
+        client: lead.name,
+        trade:  lead.trade,
+        status: 'Scheduled',
+        value:  lead.value||0,
+        start_date: today(),
+        address: lead.address||'',
+        notes:  lead.notes||'',
+        user_id: userId,
+      };
+      const{data:jobData,error:jobErr}=await supabase.from('jobs').insert(newJob).select().single();
+      if(jobErr){
+        console.error('Job creation failed:', jobErr.message);
+        return;
       }
+      // Mark lead as Won in DB then remove from local state
+      await supabase.from('leads').update({status:'Won'}).eq('id',id);
+      setLeads(prev=>prev.filter(l=>l.id!==id));
+      setJobs(prev=>[jobData,...prev]);
+    } else {
+      await supabase.from('leads').update({status}).eq('id',id);
+      setLeads(prev=>prev.map(l=>l.id===id?{...l,status}:l));
     }
   };
 
@@ -467,10 +469,11 @@ function Leads({leads,setLeads,setJobs,userId}){
 }
 
 // ── JOBS ──────────────────────────────────────────────────────────────────────
-// NOW RECEIVES setInvoices so Complete jobs auto-create an invoice
 function Jobs({jobs,setJobs,setInvoices,userId}){
   const [showAdd,setShowAdd]=useState(false);
+  const [editJob,setEditJob]=useState(null);
   const [loading,setLoading]=useState(false);
+  const [saving,setSaving]=useState(false);
   const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start_date:today(),address:'',notes:''};
   const [form,setForm]=useState(blank);
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
@@ -486,28 +489,47 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
     setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  // KEY CHANGE: when status flips to Complete, auto-create an Invoice
+  const saveEdit=async()=>{
+    if(!editJob.client.trim())return;
+    setSaving(true);
+    const{error}=await supabase.from('jobs').update({
+      client:    editJob.client,
+      trade:     editJob.trade,
+      value:     parseFloat(editJob.value)||0,
+      start_date:editJob.start_date,
+      address:   editJob.address,
+      notes:     editJob.notes,
+      status:    editJob.status,
+    }).eq('id',editJob.id);
+    if(!error){
+      setJobs(prev=>prev.map(j=>j.id===editJob.id?{...j,...editJob,value:parseFloat(editJob.value)||0}:j));
+    }
+    setSaving(false);setEditJob(null);
+  };
+
   const updateStatus=async(id,status)=>{
     const job=jobs.find(j=>j.id===id);
-    if(!job || job.status===status) return; // guard: no-op if already this status
-    await supabase.from('jobs').update({status}).eq('id',id);
-    setJobs(prev=>prev.map(j=>j.id===id?{...j,status}:j));
+    if(!job || job.status===status) return;
 
     if(status==='Complete'){
-      if(job){
-        const newInvoice={
-          client:    job.client,
-          amount:    job.value||0,
-          status:    'Draft',
-          user_id:   userId,
-        };
-        const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
-        if(invErr){
-          console.error('Invoice creation failed:', invErr.message);
-        } else if(invData){
-          setInvoices(prev=>[invData,...prev]);
-        }
+      const newInvoice={
+        client: job.client,
+        amount: job.value||0,
+        status: 'Draft',
+        user_id: userId,
+      };
+      const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
+      if(invErr){
+        console.error('Invoice creation failed:', invErr.message);
+        return;
       }
+      // Mark job Complete in DB then remove from jobs list
+      await supabase.from('jobs').update({status:'Complete'}).eq('id',id);
+      setJobs(prev=>prev.filter(j=>j.id!==id));
+      setInvoices(prev=>[invData,...prev]);
+    } else {
+      await supabase.from('jobs').update({status}).eq('id',id);
+      setJobs(prev=>prev.map(j=>j.id===id?{...j,status}:j));
     }
   };
 
@@ -547,7 +569,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
             </div>
             {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {job.address}</p>}
             {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:48,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
-            <div style={{display:'flex',gap:6,paddingLeft:48}}>
+            <div style={{display:'flex',gap:6,paddingLeft:48,alignItems:'center'}}>
               {statuses.filter(s=>s!==job.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(job.id,s)}
                   style={{background:s==='Complete'?C.greenBg:C.bg,
@@ -558,6 +580,12 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                   {s==='Complete'?'✓ Complete':s}
                 </button>
               ))}
+              <button onClick={()=>setEditJob({...job,value:job.value||''})}
+                style={{background:'none',border:`1px solid ${C.border}`,borderRadius:6,
+                  padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
+                  fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
+                Edit
+              </button>
             </div>
           </div>
         ))}
@@ -584,6 +612,30 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                 fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
           </div>
           <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px'}}>Save job</Btn>
+        </Modal>
+      )}
+
+      {editJob&&(
+        <Modal title="Edit job" onClose={()=>setEditJob(null)}>
+          <Inp label="Client name" value={editJob.client} onChange={v=>setEditJob({...editJob,client:v})} placeholder="Client name"/>
+          <Inp label="Address" value={editJob.address||''} onChange={v=>setEditJob({...editJob,address:v})} placeholder="Job site address"/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Sel label="Trade" value={editJob.trade} onChange={v=>setEditJob({...editJob,trade:v})} options={trades}/>
+            <Sel label="Status" value={editJob.status} onChange={v=>setEditJob({...editJob,status:v})} options={statuses}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            <Inp label="Value" value={String(editJob.value)} onChange={v=>setEditJob({...editJob,value:v})} placeholder="$0" type="number"/>
+            <Inp label="Start date" value={editJob.start_date||''} onChange={v=>setEditJob({...editJob,start_date:v})} type="date"/>
+          </div>
+          <div style={{marginBottom:20}}>
+            <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
+            <textarea value={editJob.notes||''} onChange={e=>setEditJob({...editJob,notes:e.target.value})}
+              placeholder="Scope, crew, materials..."
+              style={{width:'100%',minHeight:70,background:C.white,border:`1px solid ${C.border}`,
+                borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,
+                fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
+          </div>
+          <Btn onClick={saveEdit} loading={saving} style={{width:'100%',padding:'11px'}}>Save changes</Btn>
         </Modal>
       )}
     </div>
