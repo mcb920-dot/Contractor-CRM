@@ -533,6 +533,13 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
     }
   };
 
+  const activeJobs=jobs.filter(j=>j.status!=='Complete');
+  const delJob=async(id)=>{
+    if(!confirm('Delete this job?'))return;
+    await supabase.from('jobs').delete().eq('id',id);
+    setJobs(prev=>prev.filter(j=>j.id!==id));
+  };
+
   const total=jobs.reduce((a,j)=>a+(j.value||0),0);
 
   return(
@@ -548,8 +555,8 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
 
       <div className="fu1" style={{background:C.white,border:`1px solid ${C.border}`,
         borderRadius:12,overflow:'hidden'}}>
-        {jobs.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet.</div>}
-        {jobs.map((job,i,arr)=>(
+        {activeJobs.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet.</div>}
+        {activeJobs.map((job,i,arr)=>(
           <div key={job.id} style={{padding:'14px 16px',
             borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
             <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
@@ -585,6 +592,13 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                   padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,
                   fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
                 Edit
+              </button>
+              <button onClick={()=>delJob(job.id)}
+                style={{background:'none',border:'none',color:C.soft,fontSize:11,
+                  fontFamily:'inherit',cursor:'pointer'}}
+                onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                onMouseLeave={e=>e.currentTarget.style.color=C.soft}>
+                Delete
               </button>
             </div>
           </div>
