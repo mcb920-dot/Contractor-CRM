@@ -205,7 +205,7 @@ function AuthScreen({onAuth}){
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function Dashboard({leads,jobs,invoices,profile}){
+function Dashboard({leads,jobs,invoices,profile,onNavigate}){
   const pipeline=leads.filter(l=>l.status!=='Lost').reduce((a,l)=>a+(l.value||0),0);
   const collected=invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
   const owed=invoices.filter(i=>i.status==='Sent'||i.status==='Overdue').reduce((a,i)=>a+(i.amount||0),0);
@@ -275,13 +275,21 @@ function Dashboard({leads,jobs,invoices,profile}){
 
       {leads.filter(l=>l.status!=='Won'&&l.status!=='Lost').slice(-3).reverse().length>0&&(
         <div className="fu3">
-          <p style={{fontSize:12,fontWeight:500,color:C.muted,letterSpacing:'0.04em',
-            textTransform:'uppercase',marginBottom:10}}>Recent Leads</p>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+            <p style={{fontSize:12,fontWeight:500,color:C.muted,letterSpacing:'0.04em',
+              textTransform:'uppercase'}}>Recent Leads</p>
+            <button onClick={()=>onNavigate('leads')} style={{background:'none',border:'none',
+              fontSize:12,color:C.blue,fontFamily:'inherit',cursor:'pointer',fontWeight:500}}>
+              View all →
+            </button>
+          </div>
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
             {leads.filter(l=>l.status!=='Won'&&l.status!=='Lost').slice(-3).reverse().map((lead,i,arr)=>(
-              <div key={lead.id} style={{padding:'13px 16px',
+              <div key={lead.id} onClick={()=>onNavigate('leads')} style={{padding:'13px 16px',
                 borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',
-                display:'flex',alignItems:'center',gap:12}}>
+                display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}
+                onMouseEnter={e=>e.currentTarget.style.background='#F9FAFB'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                 <Avatar name={lead.name}/>
                 <div style={{flex:1,minWidth:0}}>
                   <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2,
@@ -1014,7 +1022,7 @@ function App(){
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'20px 16px 160px',WebkitOverflowScrolling:'touch'}}>
-        {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile}/>}
+        {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile} onNavigate={setScreen}/>}
         {screen==='leads'    &&<Leads leads={leads} setLeads={setLeads} setJobs={setJobs} userId={session.user.id}/>}
         {screen==='jobs'     &&<Jobs  jobs={jobs}   setJobs={setJobs}   setInvoices={setInvoices} userId={session.user.id}/>}
         {screen==='invoices' &&<Invoices invoices={invoices} setInvoices={setInvoices} userId={session.user.id}/>}
