@@ -312,7 +312,8 @@ function Leads({leads,setLeads,setJobs,userId}){
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
   const sources=['Facebook','Referral','Google','Door Knock','Nextdoor','Other'];
   const statuses=['New','Contacted','Quoted','Won','Lost'];
-  const filtered=filter==='All'?leads:leads.filter(l=>l.status===filter);
+  const activeleads=leads.filter(l=>l.status!=='Won');
+  const filtered=filter==='All'?activeleads:activeleads.filter(l=>l.status===filter);
 
   const add=async()=>{
     if(!form.name.trim())return;
@@ -367,7 +368,7 @@ function Leads({leads,setLeads,setJobs,userId}){
         alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:22,fontWeight:600,color:C.text,letterSpacing:'-0.02em'}}>Leads</h1>
-          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{leads.length} total</p>
+          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{activeleads.length} total</p>
         </div>
         <Btn onClick={()=>setShowAdd(true)}>+ Add lead</Btn>
       </div>
