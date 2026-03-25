@@ -803,9 +803,14 @@ function ReviewForm({token}){
   const [comment,setComment]=useState('');
 
   useEffect(()=>{
-    supabase.from('invoices').select('user_id, profiles(business_name, full_name)').eq('review_token',token).maybeSingle()
-      .then(({data})=>{
-        if(data?.profiles) setProfile(data.profiles);
+    supabase.from('invoices').select('user_id').eq('review_token',token).maybeSingle()
+      .then(async({data})=>{
+        if(data?.user_id){
+          const{data:prof}=await supabase.from('profiles').select('business_name,full_name').eq('id',data.user_id).maybeSingle();
+          setProfile(prof||{business_name:'This Contractor'});
+        } else {
+          setProfile(null);
+        }
         setLoading(false);
       });
   },[token]);
