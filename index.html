@@ -390,11 +390,10 @@ function Leads({leads,setLeads,setJobs,userId}){
                 <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
                   <div>
                     <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name}</p>
-                    <p style={{fontSize:12,color:C.muted}}>
-                      <a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none'}}>{lead.phone}</a>
-                      {lead.email&&<> · <a href={`mailto:${lead.email}`} style={{color:C.blue,textDecoration:'none'}}>{lead.email}</a></>}
-                      {' · '}{lead.trade}
-                    </p>
+                    <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
+                      {lead.email&&<div><a href={`mailto:${lead.email}`} style={{color:C.blue,textDecoration:'none'}}>{lead.email}</a></div>}
+                      <div><a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none'}}>{lead.phone}</a>{' · '}{lead.trade}</div>
+                    </div>
                   </div>
                   <div style={{textAlign:'right',flexShrink:0}}>
                     <p style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
