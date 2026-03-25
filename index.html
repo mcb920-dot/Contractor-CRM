@@ -792,6 +792,105 @@ function LeadCaptureForm({slug}){
   );
 }
 
+function ReviewForm({token}){
+  const [profile,setProfile]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [submitted,setSubmitted]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [rating,setRating]=useState(0);
+  const [hover,setHover]=useState(0);
+  const [name,setName]=useState('');
+  const [comment,setComment]=useState('');
+
+  useEffect(()=>{
+    supabase.from('invoices').select('user_id, profiles(business_name, full_name)').eq('review_token',token).maybeSingle()
+      .then(({data})=>{
+        if(data?.profiles) setProfile(data.profiles);
+        setLoading(false);
+      });
+  },[token]);
+
+  const submit=async()=>{
+    if(!rating||!name.trim())return;
+    setSaving(true);
+    const{data:inv}=await supabase.from('invoices').select('user_id').eq('review_token',token).maybeSingle();
+    await supabase.from('reviews').insert({
+      user_id:inv.user_id,review_token:token,
+      reviewer_name:name,rating,comment
+    });
+    setSaving(false);setSubmitted(true);
+  };
+
+  if(loading)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white}}><Spinner/></div>);
+
+  if(!profile)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}>
+    <div><p style={{fontSize:16,fontWeight:600,color:C.text}}>Invalid review link</p><p style={{fontSize:14,color:C.muted,marginTop:4}}>This link may have already been used or is incorrect.</p></div>
+  </div>);
+
+  if(submitted)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}>
+    <div>
+      <div style={{fontSize:48,marginBottom:16}}>⭐</div>
+      <p style={{fontSize:20,fontWeight:700,color:C.text,marginBottom:8}}>Thanks for your review!</p>
+      <p style={{fontSize:14,color:C.muted}}>{profile.business_name||profile.full_name} appreciates your feedback.</p>
+    </div>
+  </div>);
+
+  return(
+    <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',background:C.white,padding:'40px 24px'}}>
+      <div style={{textAlign:'center',marginBottom:32}}>
+        <p style={{fontSize:13,color:C.muted,marginBottom:4,fontWeight:500}}>Leave a review for</p>
+        <h1 style={{fontSize:24,fontWeight:800,color:C.text,letterSpacing:'-0.02em'}}>{profile.business_name||profile.full_name}</h1>
+      </div>
+
+      <div style={{textAlign:'center',marginBottom:28}}>
+        <p style={{fontSize:14,color:C.muted,marginBottom:12,fontWeight:500}}>How was your experience?</p>
+        <div style={{display:'flex',justifyContent:'center',gap:8}}>
+          {[1,2,3,4,5].map(s=>(
+            <button key={s} onClick={()=>setRating(s)}
+              onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)}
+              style={{background:'none',border:'none',cursor:'pointer',fontSize:40,
+                transition:'transform 0.1s',transform:(hover||rating)>=s?'scale(1.2)':'scale(1)',
+                filter:(hover||rating)>=s?'none':'grayscale(1) opacity(0.3)'}}>
+              ⭐
+            </button>
+          ))}
+        </div>
+        {rating>0&&<p style={{fontSize:13,color:C.blue,fontWeight:600,marginTop:8}}>
+          {['','Poor','Fair','Good','Great','Excellent!'][rating]}
+        </p>}
+      </div>
+
+      <div style={{marginBottom:16}}>
+        <label style={{display:'block',fontSize:12,fontWeight:600,color:C.text,marginBottom:6}}>Your name *</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="First name is fine"
+          style={{width:'100%',background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,
+            padding:'11px 14px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none'}}
+          onFocus={e=>e.target.style.borderColor=C.blue}
+          onBlur={e=>e.target.style.borderColor=C.border}/>
+      </div>
+
+      <div style={{marginBottom:24}}>
+        <label style={{display:'block',fontSize:12,fontWeight:600,color:C.text,marginBottom:6}}>Tell others about your experience <span style={{color:C.muted,fontWeight:400}}>(optional)</span></label>
+        <textarea value={comment} onChange={e=>setComment(e.target.value)}
+          placeholder="What did they do well? Would you recommend them?"
+          style={{width:'100%',minHeight:100,background:C.bg,border:`1px solid ${C.border}`,
+            borderRadius:10,padding:'11px 14px',color:C.text,fontSize:14,
+            fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.6}}/>
+      </div>
+
+      <button onClick={submit} disabled={saving||!rating||!name.trim()}
+        style={{width:'100%',padding:'13px',background:rating&&name.trim()?C.accent:'#CBD5E1',
+          color:'white',border:'none',borderRadius:12,fontSize:15,fontWeight:700,
+          fontFamily:'inherit',cursor:rating&&name.trim()?'pointer':'not-allowed',
+          boxShadow:rating&&name.trim()?'0 2px 8px rgba(27,79,216,0.3)':'none'}}>
+        {saving?'Submitting...':'Submit Review'}
+      </button>
+
+      <p style={{fontSize:11,color:C.soft,textAlign:'center',marginTop:16}}>Powered by BuildFlow</p>
+    </div>
+  );
+}
+
 function App(){
   const [session,setSession]=useState(null);
   const [profile,setProfile]=useState(null);
@@ -803,6 +902,7 @@ function App(){
 
   const path=window.location.pathname;
   const quoteMatch=path.match(/^\/quote\/(.+)/);
+  const reviewMatch=path.match(/^\/review\/(.+)/);
 
   useEffect(()=>{
     if(quoteMatch)return;
@@ -838,6 +938,7 @@ function App(){
   const signOut=async()=>{await supabase.auth.signOut();setScreen('dashboard');};
 
   if(quoteMatch)return <LeadCaptureForm slug={quoteMatch[1]}/>;
+  if(reviewMatch)return <ReviewForm token={reviewMatch[1]}/>;
   if(loading)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white}}><div style={{textAlign:'center'}}><Spinner/><p style={{fontSize:13,color:C.muted,marginTop:12}}>Loading...</p></div></div>);
   if(!session)return <AuthScreen onAuth={()=>{}}/>;
 
