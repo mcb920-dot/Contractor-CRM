@@ -669,8 +669,25 @@ function Invoices({invoices,setInvoices,userId}){
                             </div>
                             <div style={{textAlign:'right',flexShrink:0,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
                               <p style={{fontSize:16,fontWeight:600,color:C.green}}>{fmt$(inv.amount)}</p>
-                              <button onClick={()=>delInvoice(inv.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer',padding:0}}
-                                onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.soft}>Delete</button>
+                              <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                                <button onClick={()=>{
+                                  const token=inv.review_token;
+                                  if(token){
+                                    const url=`${window.location.origin}/review/${token}`;
+                                    navigator.clipboard.writeText(url);
+                                    alert('Review link copied!');
+                                  } else {
+                                    const newToken=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+                                    supabase.from('invoices').update({review_token:newToken}).eq('id',inv.id).then(()=>{
+                                      const url=`${window.location.origin}/review/${newToken}`;
+                                      navigator.clipboard.writeText(url);
+                                      alert('Review link copied!');
+                                    });
+                                  }
+                                }} style={{background:'none',border:`1px solid ${C.blue}`,borderRadius:6,padding:'3px 8px',fontSize:11,color:C.blue,fontFamily:'inherit',cursor:'pointer'}}>⭐ Request</button>
+                                <button onClick={()=>delInvoice(inv.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer',padding:0}}
+                                  onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.soft}>Delete</button>
+                              </div>
                             </div>
                           </div>
                         </div>
