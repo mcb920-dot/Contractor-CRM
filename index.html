@@ -790,10 +790,37 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
             style={{width:'100%',minHeight:56,background:C.white,border:'1px solid '+C.border,borderRadius:8,padding:'8px 12px',color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
         </div>
 
-        <div style={{display:'flex',gap:10}}>
+        <div style={{display:'flex',gap:10,marginBottom:8}}>
           <Btn onClick={print} variant="secondary" style={{flex:1,padding:'10px',fontSize:13}}>Print / PDF</Btn>
           <Btn onClick={save} loading={saving} style={{flex:1,padding:'10px',fontSize:13}}>{editMode?'Save Changes':'Save Invoice'}</Btn>
         </div>
+        <Btn onClick={function(){
+          var biz=(profile&&(profile.business_name||profile.full_name))||'Your Business';
+          var subject=encodeURIComponent('Invoice from '+biz);
+          var lines=form.lines.filter(function(l){return l.desc||l.price;}).map(function(l){
+            var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
+            return l.desc+' x'+l.qty+' = $'+amt.toFixed(2);
+          }).join('%0A');
+          var body=encodeURIComponent('Hi '+form.client_name+',
+
+Please find your invoice details below:
+
+')
+            +(lines?lines+'%0A%0A':'')
+            +encodeURIComponent('Subtotal: $'+sub.toFixed(2))
+            +(parseFloat(form.tax)>0?encodeURIComponent('
+Tax: $'+tax.toFixed(2)):'')
+            +encodeURIComponent('
+Total: $'+total.toFixed(2))
+            +(form.due?encodeURIComponent('
+Due: '+form.due):'')
+            +encodeURIComponent('
+
+Thank you for your business!
+'+biz);
+          var to=form.client_email?encodeURIComponent(form.client_email):'';
+          window.location.href='mailto:'+to+'?subject='+subject+'&body='+body;
+        }} variant="secondary" style={{width:'100%',padding:'10px',fontSize:13}}>Email Invoice</Btn>
       </div>
     </div>
   );
@@ -877,7 +904,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
               {showPaid&&(
                 <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'0 0 12px 12px',overflow:'hidden',marginBottom:4}}>
                   {paidList.map((inv,i,arr)=>(
-                    <div key={inv.id} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+                    <div key={inv.id} onClick={()=>setEditInv(inv)} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='#F9FAFB'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                       <div style={{display:'flex',alignItems:'center',gap:12}}>
                         <Avatar name={inv.client}/>
                         <div style={{flex:1}}>
@@ -888,7 +915,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
                             </div>
                             <div style={{textAlign:'right',flexShrink:0,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
                               <p style={{fontSize:16,fontWeight:600,color:C.green}}>{fmt$(inv.amount)}</p>
-                              <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                              <div style={{display:'flex',gap:6,alignItems:'center'}} onClick={e=>e.stopPropagation()}>
                                 <button onClick={()=>{
                                   const token=inv.review_token;
                                   if(token){
