@@ -537,24 +537,38 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
       </div>
 
       {showAdd&&(
-        <Modal title="New job" onClose={()=>setShowAdd(false)}>
-          <Inp label="Client name" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="Client name"/>
-          <Inp label="Address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="Job site address"/>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Sel label="Trade" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
-            <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:200,overflowY:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:40,paddingBottom:40}}
+          onClick={function(e){if(e.target===e.currentTarget)setShowAdd(false);}}>
+          <div style={{background:C.white,borderRadius:16,width:'calc(100% - 32px)',maxWidth:480,padding:'20px 20px 32px'}}
+            onClick={function(e){e.stopPropagation();}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <span style={{fontSize:16,fontWeight:700,color:C.text}}>New Job</span>
+              <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.muted,lineHeight:1}}>x</button>
+            </div>
+
+            <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10}}>Client Info</p>
+            <Inp label="Client name *" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="John Smith"/>
+            <Inp label="Job site address" value={form.address} onChange={v=>setForm({...form,address:v})} placeholder="123 Main St"/>
+
+            <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10,marginTop:4}}>Job Details</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Sel label="Trade" value={form.trade} onChange={v=>setForm({...form,trade:v})} options={trades}/>
+              <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Inp label="Job value" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="$0" type="number"/>
+              <Inp label="Start date" value={form.start_date} onChange={v=>setForm({...form,start_date:v})} type="date"/>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
+              <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Scope, crew, materials..."
+                style={{width:'100%',minHeight:70,background:C.white,border:'1px solid '+C.border,borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
+            </div>
+
+            <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px'}}>Save Job</Btn>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Inp label="Value" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="$0" type="number"/>
-            <Inp label="Start date" value={form.start_date} onChange={v=>setForm({...form,start_date:v})} type="date"/>
-          </div>
-          <div style={{marginBottom:20}}>
-            <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
-            <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Scope, crew, materials..."
-              style={{width:'100%',minHeight:70,background:C.white,border:`1px solid ${C.border}`,borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
-          </div>
-          <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px'}}>Save job</Btn>
-        </Modal>
+        </div>
       )}
 
       {editJob&&(
