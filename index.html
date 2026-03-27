@@ -457,7 +457,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const add=async()=>{
     if(!form.client.trim())return;
     setLoading(true);
-    const{data,error}=await supabase.from('jobs').insert({client:form.client,trade:form.trade,status:form.status,value:parseFloat(form.value)||0,start_date:form.start_date,address:form.address,notes:form.notes,user_id:userId}).select().single();
+    const{data,error}=await supabase.from('jobs').insert({client:form.client,trade:form.trade,status:form.status,value:parseFloat(form.value)||0,start_date:form.start_date,due_date:form.due_date||null,address:form.address,notes:form.notes,user_id:userId}).select().single();
     if(!error)setJobs(prev=>[...prev,data]);
     setForm(blank);setShowAdd(false);setLoading(false);
   };
@@ -474,7 +474,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
     const job=jobs.find(j=>j.id===id);
     if(!job||job.status===status)return;
     if(status==='Complete'){
-      const newInvoice={client:job.client,amount:job.value||0,status:'Draft',due_date:job.due_date||null,address:job.address||'',user_id:userId};
+      const newInvoice={client:job.client,amount:job.value||0,status:'Draft',due_date:job.due_date||null,user_id:userId};
       const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
       if(invErr){console.error('Invoice creation failed:',invErr.message);return;}
       await supabase.from('jobs').update({status:'Complete'}).eq('id',id);
