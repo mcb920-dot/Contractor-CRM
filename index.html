@@ -449,7 +449,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const [editJob,setEditJob]=useState(null);
   const [loading,setLoading]=useState(false);
   const [saving,setSaving]=useState(false);
-  const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start_date:today(),address:'',notes:''};
+  const blank={client:'',trade:'Roofing',status:'Scheduled',value:'',start_date:today(),due_date:'',address:'',notes:''};
   const [form,setForm]=useState(blank);
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
   const statuses=['Scheduled','In Progress','Complete','On Hold'];
@@ -465,7 +465,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const saveEdit=async()=>{
     if(!editJob.client.trim())return;
     setSaving(true);
-    const{error}=await supabase.from('jobs').update({client:editJob.client,trade:editJob.trade,value:parseFloat(editJob.value)||0,start_date:editJob.start_date,address:editJob.address,notes:editJob.notes,status:editJob.status}).eq('id',editJob.id);
+    const{error}=await supabase.from('jobs').update({client:editJob.client,trade:editJob.trade,value:parseFloat(editJob.value)||0,start_date:editJob.start_date,due_date:editJob.due_date||null,address:editJob.address,notes:editJob.notes,status:editJob.status}).eq('id',editJob.id);
     if(!error){setJobs(prev=>prev.map(j=>j.id===editJob.id?{...j,...editJob,value:parseFloat(editJob.value)||0}:j));}
     setSaving(false);setEditJob(null);
   };
@@ -474,7 +474,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
     const job=jobs.find(j=>j.id===id);
     if(!job||job.status===status)return;
     if(status==='Complete'){
-      const newInvoice={client:job.client,amount:job.value||0,status:'Draft',user_id:userId};
+      const newInvoice={client:job.client,amount:job.value||0,status:'Draft',due_date:job.due_date||null,address:job.address||'',user_id:userId};
       const{data:invData,error:invErr}=await supabase.from('invoices').insert(newInvoice).select().single();
       if(invErr){console.error('Invoice creation failed:',invErr.message);return;}
       await supabase.from('jobs').update({status:'Complete'}).eq('id',id);
@@ -559,6 +559,10 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
               <Inp label="Job value" value={form.value} onChange={v=>setForm({...form,value:v})} placeholder="$0" type="number"/>
               <Inp label="Start date" value={form.start_date} onChange={v=>setForm({...form,start_date:v})} type="date"/>
             </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Inp label="Due date" value={form.due_date} onChange={v=>setForm({...form,due_date:v})} type="date"/>
+              <div/>
+            </div>
 
             <div style={{marginBottom:14}}>
               <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
@@ -572,24 +576,42 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
       )}
 
       {editJob&&(
-        <Modal title="Edit job" onClose={()=>setEditJob(null)}>
-          <Inp label="Client name" value={editJob.client} onChange={v=>setEditJob({...editJob,client:v})} placeholder="Client name"/>
-          <Inp label="Address" value={editJob.address||''} onChange={v=>setEditJob({...editJob,address:v})} placeholder="Job site address"/>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Sel label="Trade" value={editJob.trade} onChange={v=>setEditJob({...editJob,trade:v})} options={trades}/>
-            <Sel label="Status" value={editJob.status} onChange={v=>setEditJob({...editJob,status:v})} options={statuses}/>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:200,overflowY:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:40,paddingBottom:40}}
+          onClick={function(e){if(e.target===e.currentTarget)setEditJob(null);}}>
+          <div style={{background:C.white,borderRadius:16,width:'calc(100% - 32px)',maxWidth:480,padding:'20px 20px 32px'}}
+            onClick={function(e){e.stopPropagation();}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <span style={{fontSize:16,fontWeight:700,color:C.text}}>Edit Job</span>
+              <button onClick={()=>setEditJob(null)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.muted,lineHeight:1}}>x</button>
+            </div>
+
+            <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10}}>Client Info</p>
+            <Inp label="Client name *" value={editJob.client} onChange={v=>setEditJob({...editJob,client:v})} placeholder="John Smith"/>
+            <Inp label="Job site address" value={editJob.address||''} onChange={v=>setEditJob({...editJob,address:v})} placeholder="123 Main St"/>
+
+            <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10,marginTop:4}}>Job Details</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Sel label="Trade" value={editJob.trade} onChange={v=>setEditJob({...editJob,trade:v})} options={trades}/>
+              <Sel label="Status" value={editJob.status} onChange={v=>setEditJob({...editJob,status:v})} options={statuses}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Inp label="Job value" value={String(editJob.value)} onChange={v=>setEditJob({...editJob,value:v})} placeholder="$0" type="number"/>
+              <Inp label="Start date" value={editJob.start_date||''} onChange={v=>setEditJob({...editJob,start_date:v})} type="date"/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <Inp label="Due date" value={editJob.due_date||''} onChange={v=>setEditJob({...editJob,due_date:v})} type="date"/>
+              <div/>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
+              <textarea value={editJob.notes||''} onChange={e=>setEditJob({...editJob,notes:e.target.value})} placeholder="Scope, crew, materials..."
+                style={{width:'100%',minHeight:70,background:C.white,border:'1px solid '+C.border,borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
+            </div>
+
+            <Btn onClick={saveEdit} loading={saving} style={{width:'100%',padding:'11px'}}>Save Changes</Btn>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Inp label="Value" value={String(editJob.value)} onChange={v=>setEditJob({...editJob,value:v})} placeholder="$0" type="number"/>
-            <Inp label="Start date" value={editJob.start_date||''} onChange={v=>setEditJob({...editJob,start_date:v})} type="date"/>
-          </div>
-          <div style={{marginBottom:20}}>
-            <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
-            <textarea value={editJob.notes||''} onChange={e=>setEditJob({...editJob,notes:e.target.value})} placeholder="Scope, crew, materials..."
-              style={{width:'100%',minHeight:70,background:C.white,border:`1px solid ${C.border}`,borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
-          </div>
-          <Btn onClick={saveEdit} loading={saving} style={{width:'100%',padding:'11px'}}>Save changes</Btn>
-        </Modal>
+        </div>
       )}
     </div>
   );
