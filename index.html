@@ -936,7 +936,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
                     </div>
                   </div>
                 </div>
-                <div style={{display:'flex',gap:6,paddingLeft:48}}>
+                <div style={{display:'flex',gap:6,paddingLeft:48}} onClick={e=>e.stopPropagation()}>
                   {statuses.filter(s=>s!==inv.status).map(s=>(
                     <button key={s} onClick={()=>updateStatus(inv.id,s)}
                       style={{background:s==='Paid'?C.greenBg:C.bg,border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
