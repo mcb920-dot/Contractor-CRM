@@ -796,26 +796,23 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
         </div>
         <Btn onClick={function(){
           var biz=(profile&&(profile.business_name||profile.full_name))||'Your Business';
-          var subject=encodeURIComponent('Invoice from '+biz);
-          var lines=form.lines.filter(function(l){return l.desc||l.price;}).map(function(l){
-            var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
-            return l.desc+' x'+l.qty+' = $'+amt.toFixed(2);
-          }).join('%0A');
-          var body=encodeURIComponent('Hi '+form.client_name+', Please find your invoice details below: ')
-            +(lines?lines+'%0A%0A':'')
-            +encodeURIComponent('Subtotal: $'+sub.toFixed(2))
-            +(parseFloat(form.tax)>0?encodeURIComponent('
-Tax: $'+tax.toFixed(2)):'')
-            +encodeURIComponent('
-Total: $'+total.toFixed(2))
-            +(form.due?encodeURIComponent('
-Due: '+form.due):'')
-            +encodeURIComponent('
-
-Thank you for your business!
-'+biz);
+          var nl='%0A';
+          var sub2='mailto:';
           var to=form.client_email?encodeURIComponent(form.client_email):'';
-          window.location.href='mailto:'+to+'?subject='+subject+'&body='+body;
+          var subj=encodeURIComponent('Invoice from '+biz);
+          var lineItems=form.lines.filter(function(l){return l.desc||l.price;}).map(function(l){
+            var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
+            return encodeURIComponent(l.desc+' x'+l.qty+' = $'+amt.toFixed(2));
+          }).join(nl);
+          var body='Hi+'+encodeURIComponent(form.client_name)+','+nl+nl
+            +'Please+find+your+invoice+details+below:'+nl+nl
+            +(lineItems?lineItems+nl+nl:'')
+            +'Subtotal:+$'+sub.toFixed(2)+nl
+            +(parseFloat(form.tax)>0?'Tax:+$'+tax.toFixed(2)+nl:'')
+            +'Total:+$'+total.toFixed(2)
+            +(form.due?nl+'Due:+'+form.due:'')
+            +nl+nl+'Thank+you+for+your+business!'+nl+encodeURIComponent(biz);
+          window.location.href=sub2+to+'?subject='+subj+'&body='+body;
         }} variant="secondary" style={{width:'100%',padding:'10px',fontSize:13}}>Email Invoice</Btn>
       </div>
     </div>
