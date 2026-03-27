@@ -457,7 +457,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const add=async()=>{
     if(!form.client.trim())return;
     setLoading(true);
-    const{data,error}=await supabase.from('jobs').insert({...form,value:parseFloat(form.value)||0,user_id:userId}).select().single();
+    const{data,error}=await supabase.from('jobs').insert({client:form.client,trade:form.trade,status:form.status,value:parseFloat(form.value)||0,start_date:form.start_date,address:form.address,notes:form.notes,user_id:userId}).select().single();
     if(!error)setJobs(prev=>[...prev,data]);
     setForm(blank);setShowAdd(false);setLoading(false);
   };
