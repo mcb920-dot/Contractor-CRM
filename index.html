@@ -876,7 +876,6 @@ function Invoices({invoices,setInvoices,userId,profile}){
           </div>
         </>);
       })()}
-
       {showAdd&&<InvoiceCreator userId={userId} profile={profile} onClose={()=>setShowAdd(false)} onSave={inv=>{setInvoices(prev=>[inv,...prev]);setShowAdd(false);}}/>
     </div>
   );
