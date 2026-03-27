@@ -101,7 +101,7 @@ const Sel=({label,value,onChange,options})=>(
         {options.map(o=><option key={o}>{o}</option>)}
       </select>
       <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
-        pointerEvents:'none',color:C.muted,fontSize:10}}>▾</div>
+        pointerEvents:'none',color:C.muted,fontSize:10}}>v</div>
     </div>
   </div>
 );
@@ -133,7 +133,7 @@ function Modal({title,onClose,children}){
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <span style={{fontSize:16,fontWeight:600,color:C.text}}>{title}</span>
           <button onClick={onClose} style={{background:'none',border:'none',
-            color:C.muted,fontSize:20,cursor:'pointer',lineHeight:1}}>×</button>
+            color:C.muted,fontSize:20,cursor:'pointer',lineHeight:1}}>x</button>
         </div>
         {children}
       </div>
@@ -189,7 +189,7 @@ function AuthScreen({onAuth}){
         <Inp label="Business name" value={biz} onChange={setBiz} placeholder="Johnson Roofing"/>
       </>}
       <Inp label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/>
-      <Inp label="Password" value={password} onChange={setPassword} placeholder="••••••••" type="password" onKeyDown={e=>e.key==='Enter'&&submit()}/>
+      <Inp label="Password" value={password} onChange={setPassword} placeholder="********" type="password" onKeyDown={e=>e.key==='Enter'&&submit()}/>
 
       <Btn onClick={submit} loading={loading} style={{width:'100%',padding:'11px',marginBottom:14,marginTop:4}}>
         {mode==='login'?'Sign in':'Create account'}
@@ -271,7 +271,7 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
               {copied?'Copied!':'Copy Link'}
             </Btn>
           </div>
-          <p style={{fontSize:12,color:C.muted,marginTop:8}}>Share this link — customers fill it out and leads appear here instantly.</p>
+          <p style={{fontSize:12,color:C.muted,marginTop:8}}>Share this link - customers fill it out and leads appear here instantly.</p>
         </div>
         );
       })()}
@@ -283,7 +283,7 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
               textTransform:'uppercase'}}>Recent Leads</p>
             <button onClick={()=>onNavigate('leads')} style={{background:'none',border:'none',
               fontSize:12,color:C.blue,fontFamily:'inherit',cursor:'pointer',fontWeight:500}}>
-              View all →
+              View all ->
             </button>
           </div>
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
@@ -297,7 +297,7 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
                 <div style={{flex:1,minWidth:0}}>
                   <p style={{fontSize:14,fontWeight:500,color:C.text,marginBottom:2,
                     whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lead.name}</p>
-                  <p style={{fontSize:12,color:C.muted}}>{lead.trade} · {lead.source}</p>
+                  <p style={{fontSize:12,color:C.muted}}>{lead.trade} - {lead.source}</p>
                 </div>
                 <div style={{textAlign:'right',flexShrink:0}}>
                   <p style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
@@ -394,7 +394,7 @@ function Leads({leads,setLeads,setJobs,userId}){
                     <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name}</p>
                     <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
                       {lead.email&&<div><a href={`mailto:${lead.email}`} style={{color:C.blue,textDecoration:'none'}}>{lead.email}</a></div>}
-                      <div><a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none'}}>{lead.phone}</a>{' · '}{lead.trade}</div>
+                      <div><a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none'}}>{lead.phone}</a>{' - '}{lead.trade}</div>
                     </div>
                   </div>
                   <div style={{textAlign:'right',flexShrink:0}}>
@@ -404,13 +404,13 @@ function Leads({leads,setLeads,setJobs,userId}){
                 </div>
               </div>
             </div>
-            {lead.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {lead.address}</p>}
+            {lead.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}> {lead.address}</p>}
             {lead.notes&&<div style={{fontSize:12,color:C.muted,marginBottom:8,paddingLeft:48,background:C.bg,padding:'8px 12px',borderRadius:6,marginLeft:48,lineHeight:1.5}}>{lead.notes}</div>}
             <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingLeft:48,alignItems:'center'}}>
               {statuses.filter(s=>s!==lead.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(lead.id,s)}
                   style={{background:s==='Won'?C.greenBg:C.bg,border:`1px solid ${s==='Won'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Won'?C.green:C.muted,fontSize:11,fontWeight:s==='Won'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                  {s==='Won'?'✓ Won':s}
+                  {s==='Won'?'Won':s}
                 </button>
               ))}
               <button onClick={()=>del(lead.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}
@@ -498,7 +498,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:24,fontWeight:800,color:C.text,letterSpacing:'-0.03em'}}>Jobs</h1>
-          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{jobs.length} jobs · {fmt$(total)}</p>
+          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{jobs.length} jobs - {fmt$(total)}</p>
         </div>
         <Btn onClick={()=>setShowAdd(true)}>+ Add job</Btn>
       </div>
@@ -513,7 +513,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                 <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
                   <div>
                     <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{job.client}</p>
-                    <p style={{fontSize:12,color:C.muted}}>{job.trade} · {job.start_date}</p>
+                    <p style={{fontSize:12,color:C.muted}}>{job.trade} - {job.start_date}</p>
                   </div>
                   <div style={{textAlign:'right',flexShrink:0}}>
                     <p style={{fontSize:16,fontWeight:700,color:C.green,marginBottom:4}}>{fmt$(job.value)}</p>
@@ -522,13 +522,13 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
                 </div>
               </div>
             </div>
-            {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>📍 {job.address}</p>}
+            {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}> {job.address}</p>}
             {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:48,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
             <div style={{display:'flex',gap:6,paddingLeft:48,alignItems:'center'}}>
               {statuses.filter(s=>s!==job.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(job.id,s)}
                   style={{background:s==='Complete'?C.greenBg:C.bg,border:`1px solid ${s==='Complete'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Complete'?C.green:C.muted,fontSize:11,fontWeight:s==='Complete'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                  {s==='Complete'?'✓ Complete':s}
+                  {s==='Complete'?'Complete':s}
                 </button>
               ))}
               <button onClick={()=>setEditJob({...job,value:job.value||''})} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:6,padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>Edit</button>
@@ -625,7 +625,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
           <h1 style={{fontSize:24,fontWeight:800,color:C.text,letterSpacing:'-0.03em'}}>Invoices</h1>
-          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{fmt$(owed)} owed · {fmt$(paid)} collected</p>
+          <p style={{fontSize:13,color:C.muted,marginTop:2}}>{fmt$(owed)} owed - {fmt$(paid)} collected</p>
         </div>
         <Btn onClick={()=>setShowAdd(true)}>+ Create</Btn>
       </div>
@@ -649,14 +649,14 @@ function Invoices({invoices,setInvoices,userId,profile}){
               <button onClick={()=>setShowPaid(p=>!p)}
                 style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',background:C.greenBg,border:`1px solid #A7F3D0`,borderRadius:showPaid?'12px 12px 0 0':12,padding:'14px 16px',cursor:'pointer',fontFamily:'inherit'}}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <span style={{fontSize:16}}>✅</span>
+                  <span style={{fontSize:16}}></span>
                   <span style={{fontSize:14,fontWeight:600,color:C.green}}>Paid Invoices</span>
                   <span style={{background:C.green,color:'#fff',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20}}>{paidList.length}</span>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
                   <span style={{fontSize:14,fontWeight:600,color:C.green}}>{fmt$(paidList.reduce((a,i)=>a+(i.amount||0),0))}</span>
                   {showPaid&&<button onClick={e=>{e.stopPropagation();clearAllPaid();}} style={{background:'none',border:`1px solid #A7F3D0`,borderRadius:6,padding:'3px 8px',fontSize:11,color:C.green,fontFamily:'inherit',cursor:'pointer'}}>Clear all</button>}
-                  <span style={{color:C.green,fontSize:12}}>{showPaid?'▲':'▼'}</span>
+                  <span style={{color:C.green,fontSize:12}}>{showPaid?'+':'-'}</span>
                 </div>
               </button>
               {showPaid&&(
@@ -688,7 +688,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
                                       alert('Review link copied!');
                                     });
                                   }
-                                }} style={{background:'none',border:`1px solid ${C.blue}`,borderRadius:6,padding:'3px 8px',fontSize:11,color:C.blue,fontFamily:'inherit',cursor:'pointer'}}>⭐ Request</button>
+                                }} style={{background:'none',border:`1px solid ${C.blue}`,borderRadius:6,padding:'3px 8px',fontSize:11,color:C.blue,fontFamily:'inherit',cursor:'pointer'}}>* Request</button>
                                 <button onClick={()=>delInvoice(inv.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer',padding:0}}
                                   onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.soft}>Delete</button>
                               </div>
@@ -725,7 +725,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
                   {statuses.filter(s=>s!==inv.status).map(s=>(
                     <button key={s} onClick={()=>updateStatus(inv.id,s)}
                       style={{background:s==='Paid'?C.greenBg:C.bg,border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                      {s==='Paid'?'✓ Paid':s}
+                      {s==='Paid'?'Paid':s}
                     </button>
                   ))}
                 </div>
@@ -779,7 +779,7 @@ function LeadCaptureForm({slug}){
 
   if(loading)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white}}><Spinner/></div>);
   if(!profile)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}><div><p style={{fontSize:16,fontWeight:500,color:C.text,marginBottom:8}}>Page not found</p><p style={{fontSize:14,color:C.muted}}>This link may be invalid.</p></div></div>);
-  if(submitted)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}><div><div style={{width:56,height:56,background:C.greenBg,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:24}}>✓</div><p style={{fontSize:18,fontWeight:600,color:C.text,marginBottom:8}}>Request sent!</p><p style={{fontSize:14,color:C.muted}}>{profile.business_name||profile.full_name} will be in touch shortly.</p></div></div>);
+  if(submitted)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}><div><div style={{width:56,height:56,background:C.greenBg,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:24}}>v</div><p style={{fontSize:18,fontWeight:600,color:C.text,marginBottom:8}}>Request sent!</p><p style={{fontSize:14,color:C.muted}}>{profile.business_name||profile.full_name} will be in touch shortly.</p></div></div>);
 
   return(
     <div style={{maxWidth:480,margin:'0 auto',minHeight:'100vh',background:C.white,padding:'32px 20px 40px'}}>
@@ -791,13 +791,13 @@ function LeadCaptureForm({slug}){
             <div style={{display:'inline-flex',alignItems:'center',gap:6,
               background:'#FFFBEB',border:'1px solid #FCD34D',borderRadius:20,
               padding:'5px 14px',marginBottom:10}}>
-              <span style={{fontSize:16}}>⭐</span>
+              <span style={{fontSize:16}}>*</span>
               <span style={{fontSize:14,fontWeight:700,color:'#92400E'}}>{avg}</span>
-              <span style={{fontSize:13,color:'#B45309'}}>· {reviews.length} review{reviews.length>1?'s':''}</span>
+              <span style={{fontSize:13,color:'#B45309'}}>- {reviews.length} review{reviews.length>1?'s':''}</span>
             </div>
           );
         })()}
-        <p style={{fontSize:14,color:C.muted}}>Request a free quote — we'll get back to you fast.</p>
+        <p style={{fontSize:14,color:C.muted}}>Request a free quote - we'll get back to you fast.</p>
       </div>
       <Inp label="Your name *" value={form.name} onChange={v=>setForm({...form,name:v})} placeholder="Full name"/>
       <Inp label="Phone number *" value={form.phone} onChange={v=>setForm({...form,phone:v})} placeholder="479-555-0000" type="tel"/>
@@ -822,7 +822,7 @@ function LeadCaptureForm({slug}){
               <div key={i} style={{background:C.bg,borderRadius:12,padding:'14px 16px',border:`1px solid ${C.border}`}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
                   <span style={{fontSize:13,fontWeight:700,color:C.text}}>{r.reviewer_name}</span>
-                  <span style={{fontSize:13}}>{'⭐'.repeat(r.rating)}</span>
+                  <span style={{fontSize:13}}>{'*'.repeat(r.rating)}</span>
                 </div>
                 {r.comment&&<p style={{fontSize:13,color:C.muted,lineHeight:1.5,margin:0}}>{r.comment}</p>}
               </div>
@@ -876,7 +876,7 @@ function ReviewForm({token}){
 
   if(submitted)return(<div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:C.white,padding:24,textAlign:'center'}}>
     <div>
-      <div style={{fontSize:48,marginBottom:16}}>⭐</div>
+      <div style={{fontSize:48,marginBottom:16}}>*</div>
       <p style={{fontSize:20,fontWeight:700,color:C.text,marginBottom:8}}>Thanks for your review!</p>
       <p style={{fontSize:14,color:C.muted}}>{profile.business_name||profile.full_name} appreciates your feedback.</p>
     </div>
@@ -898,7 +898,7 @@ function ReviewForm({token}){
               style={{background:'none',border:'none',cursor:'pointer',fontSize:40,
                 transition:'transform 0.1s',transform:(hover||rating)>=s?'scale(1.2)':'scale(1)',
                 filter:(hover||rating)>=s?'none':'grayscale(1) opacity(0.3)'}}>
-              ⭐
+              *
             </button>
           ))}
         </div>
