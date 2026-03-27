@@ -618,6 +618,60 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
 }
 
 
+function InvoiceEditor({inv,userId,onSave,onClose}){
+  const statuses=['Draft','Sent','Paid','Overdue'];
+  const [saving,setSaving]=useState(false);
+  const [form,setForm]=useState({
+    client:inv.client||'',
+    amount:String(inv.amount||0),
+    status:inv.status||'Draft',
+    due_date:inv.due_date||''
+  });
+
+  var save=async function(){
+    if(!form.client.trim())return;
+    setSaving(true);
+    var res=await supabase.from('invoices').update({
+      client:form.client,
+      amount:parseFloat(form.amount)||0,
+      status:form.status,
+      due_date:form.due_date||null
+    }).eq('id',inv.id).select().single();
+    setSaving(false);
+    if(!res.error&&res.data)onSave(res.data);
+  };
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:200,overflowY:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:40,paddingBottom:40}}
+      onClick={function(e){if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.white,borderRadius:16,width:'calc(100% - 32px)',maxWidth:480,padding:'20px 20px 32px'}}
+        onClick={function(e){e.stopPropagation();}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+          <span style={{fontSize:16,fontWeight:700,color:C.text}}>Invoice</span>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.muted,lineHeight:1}}>x</button>
+        </div>
+
+        <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10}}>Details</p>
+        <Inp label="Client name" value={form.client} onChange={function(v){setForm(Object.assign({},form,{client:v}));}} placeholder="Client name"/>
+        <Inp label="Amount" value={form.amount} onChange={function(v){setForm(Object.assign({},form,{amount:v}));}} placeholder="$0" type="number"/>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <Sel label="Status" value={form.status} onChange={function(v){setForm(Object.assign({},form,{status:v}));}} options={statuses}/>
+          <Inp label="Due date" value={form.due_date} onChange={function(v){setForm(Object.assign({},form,{due_date:v}));}} type="date"/>
+        </div>
+
+        <div style={{background:C.bg,borderRadius:10,padding:'12px 14px',marginBottom:20,marginTop:8}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700,color:C.text}}>
+            <span>Total</span>
+            <span style={{color:C.blue}}>${parseFloat(form.amount||0).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <Btn onClick={save} loading={saving} style={{width:'100%',padding:'11px'}}>Save Changes</Btn>
+      </div>
+    </div>
+  );
+}
+
 function InvoiceCreator({userId,profile,onSave,onClose}){
   const [saving,setSaving]=useState(false);
   const [form,setForm]=useState({
@@ -788,6 +842,7 @@ function InvoiceCreator({userId,profile,onSave,onClose}){
 
 function Invoices({invoices,setInvoices,userId,profile}){
   const [showAdd,setShowAdd]=useState(false);
+  const [editInv,setEditInv]=useState(null);
   const [loading,setLoading]=useState(false);
   const blank={client:'',amount:'',status:'Draft',due_date:''};
   const [form,setForm]=useState(blank);
@@ -906,7 +961,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
           <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden',marginBottom:20,boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
             {active.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No open invoices.</div>}
             {active.map((inv,i,arr)=>(
-              <div key={inv.id} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+              <div key={inv.id} onClick={()=>setEditInv(inv)} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='#F9FAFB'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                 <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
                   <Avatar name={inv.client}/>
                   <div style={{flex:1}}>
@@ -934,6 +989,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
             ))}
           </div>
           {showAdd&&<InvoiceCreator userId={userId} profile={profile} onSave={function(inv){setInvoices(function(prev){return [inv,...prev];});setShowAdd(false);}} onClose={function(){setShowAdd(false);}}/>}
+      {editInv&&<InvoiceEditor inv={editInv} userId={userId} onSave={function(updated){setInvoices(function(prev){return prev.map(function(i){return i.id===updated.id?updated:i;});});setEditInv(null);}} onClose={function(){setEditInv(null);}}/>}
         </>);
       })()}
     </div>
