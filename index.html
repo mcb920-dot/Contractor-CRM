@@ -801,11 +801,7 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
             var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
             return l.desc+' x'+l.qty+' = $'+amt.toFixed(2);
           }).join('%0A');
-          var body=encodeURIComponent('Hi '+form.client_name+',
-
-Please find your invoice details below:
-
-')
+          var body=encodeURIComponent('Hi '+form.client_name+', Please find your invoice details below: ')
             +(lines?lines+'%0A%0A':'')
             +encodeURIComponent('Subtotal: $'+sub.toFixed(2))
             +(parseFloat(form.tax)>0?encodeURIComponent('
