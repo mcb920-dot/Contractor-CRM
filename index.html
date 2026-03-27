@@ -215,7 +215,6 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
   const newLeads=leads.filter(l=>l.status==='New'&&l.status!=='Won').length;
 
   return(
-    <>
     <div>
       <div className="fu" style={{marginBottom:20}}>
         <p style={{fontSize:13,color:C.muted,marginBottom:2}}>
@@ -358,7 +357,6 @@ function Leads({leads,setLeads,setJobs,userId}){
   };
 
   return(
-    <>
     <div>
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
@@ -493,7 +491,6 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const total=jobs.reduce((a,j)=>a+(j.value||0),0);
 
   return(
-    <>
     <div>
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
