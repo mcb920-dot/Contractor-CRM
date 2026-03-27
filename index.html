@@ -215,6 +215,7 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
   const newLeads=leads.filter(l=>l.status==='New'&&l.status!=='Won').length;
 
   return(
+    <>
     <div>
       <div className="fu" style={{marginBottom:20}}>
         <p style={{fontSize:13,color:C.muted,marginBottom:2}}>
@@ -357,6 +358,7 @@ function Leads({leads,setLeads,setJobs,userId}){
   };
 
   return(
+    <>
     <div>
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
@@ -491,6 +493,7 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const total=jobs.reduce((a,j)=>a+(j.value||0),0);
 
   return(
+    <>
     <div>
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
         <div>
@@ -581,7 +584,8 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   );
 }
 
-function Invoices({invoices,setInvoices,userId}){
+
+function Invoices({invoices,setInvoices,userId,profile}){
   const [showAdd,setShowAdd]=useState(false);
   const [loading,setLoading]=useState(false);
   const blank={client:'',amount:'',status:'Draft',due_date:''};
@@ -728,20 +732,19 @@ function Invoices({invoices,setInvoices,userId}){
               </div>
             ))}
           </div>
+          {showAdd&&(
+            <Modal title="New invoice" onClose={()=>setShowAdd(false)}>
+              <Inp label="Client name" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="Client name"/>
+              <Inp label="Amount" value={form.amount} onChange={v=>setForm({...form,amount:v})} placeholder="$0" type="number"/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
+                <Inp label="Due date" value={form.due_date} onChange={v=>setForm({...form,due_date:v})} type="date"/>
+              </div>
+              <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px',marginTop:6}}>Create invoice</Btn>
+            </Modal>
+          )}
         </>);
       })()}
-
-      {showAdd&&(
-        <Modal title="New invoice" onClose={()=>setShowAdd(false)}>
-          <Inp label="Client name" value={form.client} onChange={v=>setForm({...form,client:v})} placeholder="Client name"/>
-          <Inp label="Amount" value={form.amount} onChange={v=>setForm({...form,amount:v})} placeholder="$0" type="number"/>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <Sel label="Status" value={form.status} onChange={v=>setForm({...form,status:v})} options={statuses}/>
-            <Inp label="Due date" value={form.due_date} onChange={v=>setForm({...form,due_date:v})} type="date"/>
-          </div>
-          <Btn onClick={add} loading={loading} style={{width:'100%',padding:'11px',marginTop:6}}>Create invoice</Btn>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -1016,7 +1019,7 @@ function App(){
         {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile} onNavigate={setScreen}/>}
         {screen==='leads'&&<Leads leads={leads} setLeads={setLeads} setJobs={setJobs} userId={session.user.id}/>}
         {screen==='jobs'&&<Jobs jobs={jobs} setJobs={setJobs} setInvoices={setInvoices} userId={session.user.id}/>}
-        {screen==='invoices'&&<Invoices invoices={invoices} setInvoices={setInvoices} userId={session.user.id}/>}
+        {screen==='invoices'&&<Invoices invoices={invoices} setInvoices={setInvoices} userId={session.user.id} profile={profile}/>}
       </div>
 
       <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:430,background:C.white,borderTop:`1px solid ${C.border}`,display:'flex',padding:'10px 0 28px',zIndex:10}}>
