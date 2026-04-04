@@ -147,6 +147,7 @@ function AuthScreen({onAuth}){
   const [password,setPassword]=useState('');
   const [name,setName]=useState('');
   const [biz,setBiz]=useState('');
+  const [phone,setPhone]=useState('');
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [success,setSuccess]=useState('');
@@ -156,17 +157,21 @@ function AuthScreen({onAuth}){
     if(mode==='login'){
       const{error:e}=await supabase.auth.signInWithPassword({email,password});
       if(e)setError(e.message);
-    } else {
-      const{data,error:e}=await supabase.auth.signUp({
-        email,password,
-        options:{data:{full_name:name,business_name:biz}}
-      });
-      if(e){setError(e.message);}
-      else{
-        setSuccess('Account created! Check your email to confirm, then log in.');
-        setMode('login');
-      }
+      } else {
+  if(!phone.trim()){setError('Phone number is required.');setLoading(false);return;}
+  const{data,error:e}=await supabase.auth.signUp({
+    email,password,
+    options:{data:{full_name:name,business_name:biz,phone:phone}}
+  });
+  if(e){setError(e.message);}
+  else{
+    if(data?.user){
+      await supabase.from('profiles').upsert({id:data.user.id,full_name:name,business_name:biz,phone:phone});
     }
+    setSuccess('Account created! Check your email to confirm, then log in.');
+    setMode('login');
+  }
+}
     setLoading(false);
   };
 
@@ -187,6 +192,7 @@ function AuthScreen({onAuth}){
       {mode==='signup'&&<>
         <Inp label="Your name" value={name} onChange={setName} placeholder="Mike Johnson"/>
         <Inp label="Business name" value={biz} onChange={setBiz} placeholder="Johnson Roofing"/>
+        <Inp label="Phone number *" value={phone} onChange={setPhone} placeholder="479-555-0000" type="tel"/>
       </>}
       <Inp label="Email" value={email} onChange={setEmail} placeholder="you@email.com" type="email"/>
       <Inp label="Password" value={password} onChange={setPassword} placeholder="********" type="password" onKeyDown={e=>e.key==='Enter'&&submit()}/>
