@@ -782,7 +782,21 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
             +'Total:+$'+total.toFixed(2)
             +(form.due?nl+'Due:+'+form.due:'')
             +nl+nl+'Thank+you+for+your+business!'+nl+encodeURIComponent(biz);
-          window.location.href=sub2+to+'?subject='+subj+'&body='+body;
+          // Build payment links section
+          var payLines='';
+          if(profile){
+            var methods=[];
+            if(profile.cashapp) methods.push('CashApp: cash.app/'+(profile.cashapp.startsWith('$')?profile.cashapp:'$'+profile.cashapp));
+            if(profile.venmo)   methods.push('Venmo: venmo.com/'+profile.venmo.replace('@',''));
+            if(profile.zelle)   methods.push('Zelle: '+profile.zelle);
+            if(profile.paypal)  methods.push('PayPal: paypal.me/'+profile.paypal.replace('@',''));
+            if(profile.square)  methods.push('Square: '+profile.square);
+            if(profile.stripe_link) methods.push('Card/Online: '+profile.stripe_link);
+            if(methods.length>0){
+              payLines=nl+nl+'--- PAY NOW ---'+nl+methods.map(function(m){return encodeURIComponent(m);}).join(nl);
+            }
+          }
+          window.location.href=sub2+to+'?subject='+subj+'&body='+body+payLines;
         }} variant="secondary" style={{width:'100%',padding:'10px',fontSize:13}}>Email Invoice</Btn>
       </div>
     </div>
