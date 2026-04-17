@@ -459,19 +459,19 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const trades=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
   const statuses=['Scheduled','In Progress','Complete','On Hold'];
 
-  const add=async()=>{
-    if(!form.client.trim())return;
+  const add=async(fd)=>{
+    if(!fd.client.trim())return;
     setLoading(true);
-    const{data,error}=await supabase.from('jobs').insert({client:form.client,trade:form.trade,status:form.status,value:parseFloat(form.value)||0,start_date:form.start_date,due_date:form.due_date||null,address:form.address,notes:form.notes,user_id:userId}).select().single();
+    const{data,error}=await supabase.from('jobs').insert({client:fd.client,trade:fd.trade,status:fd.status,value:parseFloat(fd.value)||0,start_date:fd.start_date,due_date:fd.due_date||null,address:fd.address,notes:fd.notes,user_id:userId}).select().single();
     if(!error)setJobs(prev=>[...prev,data]);
-    setForm(blank);setShowAdd(false);setLoading(false);
+    setShowAdd(false);setLoading(false);
   };
 
-  const saveEdit=async()=>{
-    if(!editJob.client.trim())return;
+  const saveEdit=async(fd)=>{
+    if(!fd.client.trim())return;
     setSaving(true);
-    const{error}=await supabase.from('jobs').update({client:editJob.client,trade:editJob.trade,value:parseFloat(editJob.value)||0,start_date:editJob.start_date,due_date:editJob.due_date||null,address:editJob.address,notes:editJob.notes,status:editJob.status}).eq('id',editJob.id);
-    if(!error){setJobs(prev=>prev.map(j=>j.id===editJob.id?{...j,...editJob,value:parseFloat(editJob.value)||0}:j));}
+    const{error}=await supabase.from('jobs').update({client:fd.client,trade:fd.trade,value:parseFloat(fd.value)||0,start_date:fd.start_date,due_date:fd.due_date||null,address:fd.address,notes:fd.notes,status:fd.status}).eq('id',fd.id);
+    if(!error){setJobs(prev=>prev.map(j=>j.id===fd.id?{...j,...fd,value:parseFloat(fd.value)||0}:j));}
     setSaving(false);setEditJob(null);
   };
 
@@ -495,10 +495,13 @@ function Jobs({jobs,setJobs,setInvoices,userId}){
   const delJob=async(id)=>{if(!confirm('Delete this job?'))return;await supabase.from('jobs').delete().eq('id',id);setJobs(prev=>prev.filter(j=>j.id!==id));};
   const total=jobs.reduce((a,j)=>a+(j.value||0),0);
 
-  const JOB_TRADES=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
+const JOB_TRADES=['Roofing','Plumbing','HVAC','Electrical','Concrete','Framing','Painting','Landscaping','General','Other'];
 const JOB_STATUSES=['Scheduled','In Progress','Complete','On Hold'];
 
-const JobForm=({data,setData,onSave,onClose,saveLabel,saveLoading})=>(
+function JobForm({initialData,onSave,onClose,saveLabel,saveLoading}){
+  const [d,setD]=useState(initialData);
+  const upd=k=>v=>setD(p=>({...p,[k]:v}));
+  return(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:200,overflowY:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:40,paddingBottom:40}}
       onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
       <div style={{background:C.white,borderRadius:16,width:'calc(100% - 32px)',maxWidth:480,padding:'20px 20px 32px'}}
@@ -508,31 +511,31 @@ const JobForm=({data,setData,onSave,onClose,saveLabel,saveLoading})=>(
           <button onClick={onClose} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.muted,lineHeight:1}}>x</button>
         </div>
         <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10}}>Client Info</p>
-        <Inp label="Client name *" value={data.client} onChange={v=>setData({...data,client:v})} placeholder="John Smith"/>
-        <Inp label="Job site address" value={data.address||''} onChange={v=>setData({...data,address:v})} placeholder="123 Main St"/>
+        <Inp label="Client name *" value={d.client} onChange={upd('client')} placeholder="John Smith"/>
+        <Inp label="Job site address" value={d.address||''} onChange={upd('address')} placeholder="123 Main St"/>
         <p style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:10,marginTop:4}}>Job Details</p>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          <Sel label="Trade" value={data.trade} onChange={v=>setData({...data,trade:v})} options={JOB_TRADES}/>
-          <Sel label="Status" value={data.status} onChange={v=>setData({...data,status:v})} options={JOB_STATUSES}/>
+          <Sel label="Trade" value={d.trade} onChange={upd('trade')} options={JOB_TRADES}/>
+          <Sel label="Status" value={d.status} onChange={upd('status')} options={JOB_STATUSES}/>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          <Inp label="Job value" value={String(data.value||'')} onChange={v=>setData({...data,value:v})} placeholder="$0" type="number"/>
-          <Inp label="Start date" value={data.start_date||''} onChange={v=>setData({...data,start_date:v})} type="date"/>
+          <Inp label="Job value" value={String(d.value||'')} onChange={upd('value')} placeholder="$0" type="number"/>
+          <Inp label="Start date" value={d.start_date||''} onChange={upd('start_date')} type="date"/>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-          <Inp label="Due / End date" value={data.due_date||''} onChange={v=>setData({...data,due_date:v})} type="date"/>
+          <Inp label="Due / End date" value={d.due_date||''} onChange={upd('due_date')} type="date"/>
           <div/>
         </div>
         <div style={{marginBottom:14}}>
           <label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>Notes</label>
-          <textarea value={data.notes||''} onChange={e=>setData({...data,notes:e.target.value})} placeholder="Scope, crew, materials..."
+          <textarea value={d.notes||''} onChange={e=>setD(p=>({...p,notes:e.target.value}))} placeholder="Scope, crew, materials..."
             style={{width:'100%',minHeight:70,background:C.white,border:'1px solid '+C.border,borderRadius:8,padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',resize:'vertical',lineHeight:1.5}}/>
         </div>
-        <Btn onClick={onSave} loading={saveLoading} style={{width:'100%',padding:'11px'}}>{saveLabel}</Btn>
+        <Btn onClick={()=>onSave(d)} loading={saveLoading} style={{width:'100%',padding:'11px'}}>{saveLabel}</Btn>
       </div>
     </div>
   );
-
+}
   return(
     <div>
       <div className="fu" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
@@ -579,8 +582,8 @@ const JobForm=({data,setData,onSave,onClose,saveLabel,saveLoading})=>(
         ))}
       </div>
 
-      {showAdd&&<JobForm data={form} setData={setForm} onSave={add} onClose={()=>setShowAdd(false)} saveLabel="Save Job" saveLoading={loading}/>}
-      {editJob&&<JobForm data={editJob} setData={setEditJob} onSave={saveEdit} onClose={()=>setEditJob(null)} saveLabel="Save Changes" saveLoading={saving}/>}
+      {showAdd&&<JobForm initialData={form} onSave={add} onClose={()=>setShowAdd(false)} saveLabel="Save Job" saveLoading={loading}/>}
+      {editJob&&<JobForm initialData={editJob} onSave={saveEdit} onClose={()=>setEditJob(null)} saveLabel="Save Changes" saveLoading={saving}/>}
     </div>
   );
 }
