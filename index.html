@@ -774,14 +774,14 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
             var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
             return encodeURIComponent(l.desc+' x'+l.qty+' = $'+amt.toFixed(2));
           }).join(nl);
-          var body='Hi+'+encodeURIComponent(form.client_name)+','+nl+nl
-            +'Please+find+your+invoice+details+below:'+nl+nl
+          var body=encodeURIComponent('Hi ')+encodeURIComponent(form.client_name)+','+nl+nl
+            +encodeURIComponent('Please find your invoice details below:')+nl+nl
             +(lineItems?lineItems+nl+nl:'')
-            +'Subtotal:+$'+sub.toFixed(2)+nl
-            +(parseFloat(form.tax)>0?'Tax:+$'+tax.toFixed(2)+nl:'')
-            +'Total:+$'+total.toFixed(2)
-            +(form.due?nl+'Due:+'+form.due:'')
-            +nl+nl+'Thank+you+for+your+business!'+nl+encodeURIComponent(biz);
+            +encodeURIComponent('Subtotal: $'+sub.toFixed(2))+nl
+            +(parseFloat(form.tax)>0?encodeURIComponent('Tax: $'+tax.toFixed(2))+nl:'')
+            +encodeURIComponent('Total: $'+total.toFixed(2))
+            +(form.due?nl+encodeURIComponent('Due: '+form.due):'')
+            +nl+nl+encodeURIComponent('Thank you for your business!')+nl+encodeURIComponent(biz);
           // Build payment links section
           var payLines='';
           if(profile){
