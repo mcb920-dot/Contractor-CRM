@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#EDF0F5;}
+html,body{height:100%;background:#F0F2F7;}
 body{-webkit-font-smoothing:antialiased;font-family:'DM Sans',system-ui,sans-serif;}
 input::placeholder,textarea::placeholder{color:#C1C7D0;}
 select{-webkit-appearance:none;}
@@ -42,10 +42,11 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 const C={
-  bg:'#EDF0F5',white:'#FFFFFF',border:'#D1D9E6',border2:'#E8EDF5',
-  text:'#0A0F1E',muted:'#4B5563',soft:'#9CA3AF',accent:'#1B4FD8',
-  blue:'#1B4FD8',green:'#047857',amber:'#B45309',red:'#DC2626',
+  bg:'#F5F6FA',white:'#FFFFFF',border:'#E4E7EF',border2:'#ECEEF4',
+  text:'#111827',muted:'#6B7280',soft:'#9CA3AF',accent:'#2563EB',
+  blue:'#2563EB',green:'#059669',amber:'#D97706',red:'#DC2626',
   blueBg:'#EFF6FF',greenBg:'#ECFDF5',amberBg:'#FFFBEB',redBg:'#FEF2F2',
+  card:'#FFFFFF',navy:'#0F172A',
 };
 
 const fmt$=n=>n>=1000?`$${(n/1000).toFixed(1)}k`:`$${n||0}`;
@@ -62,8 +63,8 @@ const STATUS={
 };
 
 const Badge=({s})=>{const st=STATUS[s]||{color:C.muted,bg:C.border2};return(
-  <span style={{background:st.bg,color:st.color,fontSize:11,fontWeight:600,
-    padding:'3px 8px',borderRadius:20,display:'inline-block'}}>{s}</span>
+  <span style={{background:st.bg,color:st.color,fontSize:11,fontWeight:700,
+    padding:'3px 10px',borderRadius:20,display:'inline-block',letterSpacing:'0.03em'}}>{s}</span>
 );};
 
 const Avatar=()=>(
@@ -80,11 +81,12 @@ const Spinner=()=><div style={{width:18,height:18,border:`2px solid ${C.border}`
   borderTop:`2px solid ${C.accent}`,borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>;
 
 const Inp=({label,value,onChange,placeholder,type='text',style:sx={},onKeyDown})=>(
-  <div style={{marginBottom:14}}>
-    {label&&<label style={{display:'block',fontSize:12,fontWeight:500,color:C.text,marginBottom:5}}>{label}</label>}
+  <div style={{marginBottom:16}}>
+    {label&&<label style={{display:'block',fontSize:11,fontWeight:600,color:C.muted,marginBottom:6,letterSpacing:'0.05em',textTransform:'uppercase'}}>{label}</label>}
     <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-      style={{width:'100%',background:C.white,border:`1px solid ${C.border}`,borderRadius:8,
-        padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',...sx}}
+      style={{width:'100%',background:C.white,border:`1.5px solid ${C.border}`,borderRadius:10,
+        padding:'11px 14px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',
+        transition:'border-color 0.15s',...sx}}
       onFocus={e=>e.target.style.borderColor=C.blue}
       onBlur={e=>e.target.style.borderColor=C.border}
       onKeyDown={onKeyDown}/>
@@ -110,13 +112,13 @@ const Btn=({onClick,children,variant='primary',loading=false,style:sx={}})=>(
   <button onClick={onClick} disabled={loading}
     style={{background:variant==='primary'?C.accent:C.white,
       color:variant==='primary'?C.white:C.text,
-      border:variant==='primary'?'none':`1px solid ${C.border}`,
-      borderRadius:12,padding:'10px 20px',fontSize:13,fontWeight:700,letterSpacing:'0.01em',
+      border:variant==='primary'?'none':`1.5px solid ${C.border}`,
+      borderRadius:12,padding:'11px 22px',fontSize:13,fontWeight:700,letterSpacing:'0.02em',
       fontFamily:'inherit',cursor:loading?'not-allowed':'pointer',
       opacity:loading?0.7:1,display:'inline-flex',alignItems:'center',
       justifyContent:'center',gap:8,
-      boxShadow:variant==='primary'?'0 1px 4px rgba(27,79,216,0.3),0 4px 14px rgba(27,79,216,0.18)':'none',
-      transition:'opacity 0.15s,box-shadow 0.15s',...sx}}>
+      boxShadow:variant==='primary'?'0 1px 3px rgba(37,99,235,0.2),0 4px 12px rgba(37,99,235,0.15)':'0 1px 2px rgba(0,0,0,0.05)',
+      transition:'all 0.15s',...sx}}>
     {loading?<Spinner/>:children}
   </button>
 );
@@ -320,7 +322,7 @@ function Dashboard({leads,jobs,invoices,profile,onNavigate}){
               View all ->
             </button>
           </div>
-          <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
+          <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 1px 3px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.07)'}}>
             {leads.filter(l=>l.status!=='Won'&&l.status!=='Lost').slice(-3).reverse().map((lead,i,arr)=>(
               <div key={lead.id} onClick={()=>onNavigate('leads')} style={{padding:'13px 16px',
                 borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',
@@ -405,49 +407,69 @@ function Leads({leads,setLeads,setJobs,userId}){
         {['All',...statuses].map(f=>(
           <button key={f} onClick={()=>setFilter(f)}
             style={{background:filter===f?C.accent:C.white,color:filter===f?C.white:C.muted,
-              border:`1px solid ${filter===f?C.accent:C.border}`,borderRadius:20,
-              padding:'6px 16px',fontSize:12,fontWeight:600,fontFamily:'inherit',
-              cursor:'pointer',whiteSpace:'nowrap',boxShadow:filter===f?'0 2px 8px rgba(27,79,216,0.3)':'none'}}>
+              border:`1.5px solid ${filter===f?C.accent:C.border}`,borderRadius:20,
+              padding:'7px 18px',fontSize:12,fontWeight:700,fontFamily:'inherit',
+              cursor:'pointer',whiteSpace:'nowrap',
+              boxShadow:filter===f?'0 2px 8px rgba(37,99,235,0.25)':'0 1px 2px rgba(0,0,0,0.04)',
+              letterSpacing:'0.02em'}}>
             {f}
           </button>
         ))}
       </div>
 
-      <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
+      <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 1px 3px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.07)'}}>
         {filtered.length===0&&(
           <div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No leads yet. Add your first one.</div>
         )}
         {filtered.map((lead,i,arr)=>(
-          <div key={lead.id} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-            <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
-              <Avatar name={lead.name}/>
+          <div key={lead.id} style={{padding:'16px 20px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:10}}>
+              <div style={{width:42,height:42,borderRadius:12,background:C.navy,flexShrink:0,
+                display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,color:'white'}}>
+                {lead.name.charAt(0).toUpperCase()}
+              </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-                  <div>
-                    <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{lead.name}</p>
-                    <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-                      {lead.email&&<div><a href={`mailto:${lead.email}`} style={{color:C.blue,textDecoration:'none'}}>{lead.email}</a></div>}
-                      <div><a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none'}}>{lead.phone}</a>{' - '}{lead.trade}</div>
-                    </div>
-                  </div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:4}}>
+                  <p style={{fontSize:15,fontWeight:700,color:C.text}}>{lead.name}</p>
                   <div style={{textAlign:'right',flexShrink:0}}>
-                    <p style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
+                    <p style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:4}}>{fmt$(lead.value)}</p>
                     <Badge s={lead.status}/>
                   </div>
                 </div>
+                <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>
+                  {lead.phone&&<a href={`tel:${lead.phone}`} style={{color:C.blue,textDecoration:'none',marginRight:10}}>{lead.phone}</a>}
+                  <span>{lead.trade} · {lead.source}</span>
+                </div>
               </div>
             </div>
-            {lead.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>{lead.address}</p>}
-            {lead.notes&&<div style={{fontSize:12,color:C.muted,marginBottom:8,paddingLeft:48,background:C.bg,padding:'8px 12px',borderRadius:6,marginLeft:48,lineHeight:1.5}}>{lead.notes}</div>}
-            <div style={{display:'flex',gap:6,flexWrap:'wrap',paddingLeft:48,alignItems:'center'}}>
-              {statuses.filter(s=>s!==lead.status).map(s=>(
+            {lead.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:56}}>{lead.address}</p>}
+            {lead.notes&&<div style={{fontSize:12,color:C.muted,marginBottom:10,marginLeft:56,background:C.bg,padding:'8px 12px',borderRadius:8,lineHeight:1.5}}>{lead.notes}</div>}
+            <div style={{display:'flex',gap:8,paddingLeft:56,alignItems:'center',flexWrap:'wrap'}}>
+              {lead.status!=='Won'&&(
+                <button onClick={()=>updateStatus(lead.id,'Won')}
+                  style={{background:C.greenBg,border:`1.5px solid ${C.green}`,borderRadius:8,padding:'5px 14px',
+                    color:C.green,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
+                  ✓ Won
+                </button>
+              )}
+              {['Contacted','Quoted'].filter(s=>s!==lead.status).map(s=>(
                 <button key={s} onClick={()=>updateStatus(lead.id,s)}
-                  style={{background:s==='Won'?C.greenBg:C.bg,border:`1px solid ${s==='Won'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Won'?C.green:C.muted,fontSize:11,fontWeight:s==='Won'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                  {s==='Won'?'Won':s}
+                  style={{background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:8,padding:'5px 14px',
+                    color:C.muted,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer'}}>
+                  {s}
                 </button>
               ))}
-              <button onClick={()=>del(lead.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}
-                onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.soft}>Delete</button>
+              {lead.status!=='Lost'&&(
+                <button onClick={()=>updateStatus(lead.id,'Lost')}
+                  style={{background:'none',border:`1.5px solid ${C.border}`,borderRadius:8,padding:'5px 14px',
+                    color:C.soft,fontSize:12,fontWeight:500,fontFamily:'inherit',cursor:'pointer'}}>
+                  Lost
+                </button>
+              )}
+              <button onClick={()=>del(lead.id)}
+                style={{background:'none',border:'none',color:C.soft,fontSize:12,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto',padding:'5px 4px'}}
+                onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                onMouseLeave={e=>e.currentTarget.style.color=C.soft}>✕</button>
             </div>
           </div>
         ))}
@@ -576,37 +598,54 @@ function JobForm({initialData,onSave,onClose,saveLabel,saveLoading}){
         <Btn onClick={()=>setShowAdd(true)}>+ Add job</Btn>
       </div>
 
-      <div className="fu1" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
-        {activeJobs.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet.</div>}
+      <div className="fu1" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:'0 1px 3px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.07)'}}>
+        {activeJobs.length===0&&<div style={{padding:40,textAlign:'center',color:C.muted,fontSize:14}}>No jobs yet. Tap + Add job to get started.</div>}
         {activeJobs.map((job,i,arr)=>(
-          <div key={job.id} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
-            <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
-              <Avatar name={job.client}/>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
-                  <div>
-                    <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{job.client}</p>
-                    <p style={{fontSize:12,color:C.muted}}>{job.trade} · {job.start_date}{job.due_date?` → ${job.due_date}`:''}</p>
-                  </div>
-                  <div style={{textAlign:'right',flexShrink:0}}>
-                    <p style={{fontSize:16,fontWeight:700,color:C.green,marginBottom:4}}>{fmt$(job.value)}</p>
-                    <Badge s={job.status}/>
-                  </div>
+          <div key={job.id} style={{padding:'16px 20px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:job.address||job.notes?10:0}}>
+              <div style={{width:42,height:42,borderRadius:12,background:C.navy,flexShrink:0,
+                display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,color:'white'}}>
+                {job.client.charAt(0).toUpperCase()}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:4}}>
+                  <p style={{fontSize:15,fontWeight:700,color:C.text}}>{job.client}</p>
+                  <p style={{fontSize:16,fontWeight:800,color:C.green,flexShrink:0}}>{fmt$(job.value)}</p>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                  <p style={{fontSize:12,color:C.muted}}>{job.trade}{job.start_date?` · ${job.start_date}`:''}{job.due_date?` → ${job.due_date}`:''}</p>
+                  <Badge s={job.status}/>
                 </div>
               </div>
             </div>
-            {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:6,paddingLeft:48}}>{job.address}</p>}
-            {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:48,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
-            <div style={{display:'flex',gap:6,paddingLeft:48,alignItems:'center'}}>
-              {statuses.filter(s=>s!==job.status).map(s=>(
-                <button key={s} onClick={()=>updateStatus(job.id,s)}
-                  style={{background:s==='Complete'?C.greenBg:C.bg,border:`1px solid ${s==='Complete'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Complete'?C.green:C.muted,fontSize:11,fontWeight:s==='Complete'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                  {s}
+            {job.address&&<p style={{fontSize:12,color:C.muted,marginBottom:4,paddingLeft:56}}>{job.address}</p>}
+            {job.notes&&<p style={{fontSize:12,color:C.muted,paddingLeft:56,marginBottom:8,lineHeight:1.5}}>{job.notes}</p>}
+            <div style={{display:'flex',gap:8,paddingLeft:56,alignItems:'center',marginTop:10}}>
+              {job.status!=='Complete'&&(
+                <button onClick={()=>updateStatus(job.id,'Complete')}
+                  style={{background:C.greenBg,border:`1.5px solid ${C.green}`,borderRadius:8,padding:'5px 14px',
+                    color:C.green,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
+                  ✓ Complete
                 </button>
-              ))}
-              <button onClick={()=>setEditJob({...job,value:job.value||''})} style={{background:'none',border:`1px solid ${C.border}`,borderRadius:6,padding:'4px 10px',color:C.muted,fontSize:11,fontWeight:500,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>Edit</button>
-              <button onClick={()=>delJob(job.id)} style={{background:'none',border:'none',color:C.soft,fontSize:11,fontFamily:'inherit',cursor:'pointer'}}
-                onMouseEnter={e=>e.currentTarget.style.color=C.red} onMouseLeave={e=>e.currentTarget.style.color=C.soft}>Delete</button>
+              )}
+              {job.status==='Scheduled'&&(
+                <button onClick={()=>updateStatus(job.id,'In Progress')}
+                  style={{background:C.blueBg,border:`1.5px solid ${C.blue}`,borderRadius:8,padding:'5px 14px',
+                    color:C.blue,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer'}}>
+                  Start
+                </button>
+              )}
+              <button onClick={()=>setEditJob({...job,value:job.value||''})}
+                style={{background:'none',border:`1.5px solid ${C.border}`,borderRadius:8,padding:'5px 14px',
+                  color:C.muted,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
+                Edit
+              </button>
+              <button onClick={()=>delJob(job.id)}
+                style={{background:'none',border:'none',color:C.soft,fontSize:12,fontFamily:'inherit',cursor:'pointer',padding:'5px 4px'}}
+                onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                onMouseLeave={e=>e.currentTarget.style.color=C.soft}>
+                ✕
+              </button>
             </div>
           </div>
         ))}
@@ -1084,31 +1123,45 @@ function Invoices({invoices,setInvoices,userId,profile}){
           <div className="fu2" style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden',marginBottom:20,boxShadow:'0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.10)'}}>
             {active.length===0&&<div style={{padding:32,textAlign:'center',color:C.muted,fontSize:14}}>No open invoices.</div>}
             {active.map((inv,i,arr)=>(
-              <div key={inv.id} onClick={()=>setEditInv(inv)} style={{padding:'14px 16px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='#F9FAFB'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-                  <Avatar name={inv.client}/>
+              <div key={inv.id} onClick={()=>setEditInv(inv)} style={{padding:'16px 20px',borderBottom:i<arr.length-1?`1px solid ${C.border2}`:'none',cursor:'pointer',transition:'background 0.1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='#F9FAFB'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.navy,flexShrink:0,
+                    display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,color:'white'}}>
+                    {inv.client.charAt(0).toUpperCase()}
+                  </div>
                   <div style={{flex:1}}>
-                    <div style={{display:'flex',justifyContent:'space-between',gap:8}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
                       <div>
-                        <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>{inv.client}</p>
+                        <p style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:3}}>{inv.client}</p>
                         <p style={{fontSize:12,color:C.muted}}>{inv.due_date?`Due ${inv.due_date}`:'No due date'}</p>
                       </div>
                       <div style={{textAlign:'right',flexShrink:0}}>
-                        <p style={{fontSize:16,fontWeight:600,color:C.text,marginBottom:4}}>{fmt$(inv.amount)}</p>
+                        <p style={{fontSize:18,fontWeight:800,color:C.text,marginBottom:4}}>{fmt$(inv.amount)}</p>
                         <Badge s={inv.status}/>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div style={{display:'flex',gap:6,paddingLeft:48,flexWrap:'wrap',alignItems:'center'}} onClick={e=>e.stopPropagation()}>
-                  {statuses.filter(s=>s!==inv.status).map(s=>(
-                    <button key={s} onClick={()=>updateStatus(inv.id,s)}
-                      style={{background:s==='Paid'?C.greenBg:C.bg,border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
-                      {s}
+                <div style={{display:'flex',gap:8,paddingLeft:56,alignItems:'center'}} onClick={e=>e.stopPropagation()}>
+                  {inv.status!=='Paid'&&(
+                    <button onClick={()=>updateStatus(inv.id,'Paid')}
+                      style={{background:C.greenBg,border:`1.5px solid ${C.green}`,borderRadius:8,padding:'5px 14px',
+                        color:C.green,fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
+                      ✓ Mark Paid
                     </button>
-                  ))}
+                  )}
+                  {inv.status==='Draft'&&(
+                    <button onClick={()=>updateStatus(inv.id,'Sent')}
+                      style={{background:C.blueBg,border:`1.5px solid ${C.blue}`,borderRadius:8,padding:'5px 14px',
+                        color:C.blue,fontSize:12,fontWeight:600,fontFamily:'inherit',cursor:'pointer'}}>
+                      Send
+                    </button>
+                  )}
                   <button onClick={()=>setPayInv(inv)}
-                    style={{background:'#00D632',border:'none',borderRadius:6,padding:'4px 12px',color:'white',fontSize:11,fontWeight:700,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
+                    style={{background:C.navy,border:'none',borderRadius:8,padding:'5px 14px',
+                      color:'white',fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
                     💸 Request
                   </button>
                 </div>
@@ -1810,7 +1863,7 @@ function App(){
         </div>
       </div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 160px',WebkitOverflowScrolling:'touch'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'20px 16px 140px',WebkitOverflowScrolling:'touch'}}>
         {screen==='dashboard'&&<Dashboard leads={leads} jobs={jobs} invoices={invoices} profile={profile} onNavigate={setScreen}/>}
         {screen==='leads'&&<Leads leads={leads} setLeads={setLeads} setJobs={setJobs} userId={session.user.id}/>}
         {screen==='jobs'&&<Jobs jobs={jobs} setJobs={setJobs} setInvoices={setInvoices} userId={session.user.id}/>}
