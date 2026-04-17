@@ -1875,11 +1875,11 @@ function App(){
         {NAV.map(n=>(
           <button key={n.id} onClick={()=>setScreen(n.id)}
             style={{flex:1,background:'none',border:'none',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:3,fontFamily:'inherit',padding:'2px 0',
-              color:screen===n.id?C.accent:C.soft,transition:'all 0.15s'}}>
+              color:screen===n.id?C.accent:'#4B5563',transition:'all 0.15s'}}>
             <div style={{padding:'4px 14px',borderRadius:10,background:screen===n.id?C.blueBg:'transparent',transition:'background 0.15s'}}>
               {n.icon}
             </div>
-            <span style={{fontSize:9,fontWeight:screen===n.id?700:400,letterSpacing:'0.03em'}}>{n.label}</span>
+            <span style={{fontSize:9,fontWeight:screen===n.id?700:500,letterSpacing:'0.03em'}}>{n.label}</span>
           </button>
         ))}
       </div>
