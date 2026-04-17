@@ -1159,7 +1159,24 @@ function Invoices({invoices,setInvoices,userId,profile}){
                       Send
                     </button>
                   )}
-                  <button onClick={()=>setPayInv(inv)}
+                  <button onClick={()=>{
+                    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    if(isMobile){
+                      const biz=(profile?.business_name||profile?.full_name)||'Your Contractor';
+                      const amt=inv.amount?inv.amount.toFixed(2):'0.00';
+                      let payLinks='';
+                      if(profile?.cashapp) payLinks+=`\nCashApp: cash.app/${profile.cashapp.startsWith('$')?profile.cashapp:'$'+profile.cashapp}`;
+                      if(profile?.venmo) payLinks+=`\nVenmo: venmo.com/${profile.venmo.replace('@','')}`;
+                      if(profile?.zelle) payLinks+=`\nZelle: ${profile.zelle}`;
+                      if(profile?.paypal) payLinks+=`\nPayPal: paypal.me/${profile.paypal.replace('@','')}`;
+                      if(profile?.square) payLinks+=`\nSquare: ${profile.square}`;
+                      if(profile?.stripe_link) payLinks+=`\nCard: ${profile.stripe_link}`;
+                      const msg=encodeURIComponent(`Hi ${inv.client}, your invoice from ${biz} is ready.\n\nTotal Due: $${amt}${inv.due_date?`\nDue: ${inv.due_date}`:''}\n\nPay here:${payLinks||' (payment info coming soon)'}\n\nThank you!`);
+                      window.location.href=`sms:?body=${msg}`;
+                    } else {
+                      setPayInv(inv);
+                    }
+                  }}
                     style={{background:C.navy,border:'none',borderRadius:8,padding:'5px 14px',
                       color:'white',fontSize:12,fontWeight:700,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
                     💸 Request
