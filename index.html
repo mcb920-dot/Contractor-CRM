@@ -1804,9 +1804,12 @@ function PayPage({invoiceId}){
 
   useEffect(()=>{
     (async()=>{
+      console.log('Fetching invoice:', invoiceId);
       const{data:inv,error}=await supabase.from('invoices').select('*').eq('id',invoiceId).maybeSingle();
+      console.log('Invoice result:', inv, 'Error:', error);
       if(error||!inv){setNotFound(true);setLoading(false);return;}
-      const{data:prof}=await supabase.from('profiles').select('*').eq('id',inv.user_id).maybeSingle();
+      const{data:prof,error:profErr}=await supabase.from('profiles').select('*').eq('id',inv.user_id).maybeSingle();
+      console.log('Profile result:', prof, 'Error:', profErr);
       setData({inv,prof});
       setLoading(false);
     })();
@@ -1819,7 +1822,10 @@ function PayPage({invoiceId}){
   );
   if(notFound||!data)return(
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#F0F2F7',padding:24,textAlign:'center'}}>
-      <p style={{fontSize:16,color:'#6B7280'}}>Payment link not found.</p>
+      <div>
+        <p style={{fontSize:16,color:'#6B7280',marginBottom:8}}>Payment link not found.</p>
+        <p style={{fontSize:12,color:'#9CA3AF'}}>ID: {invoiceId}</p>
+      </div>
     </div>
   );
 
