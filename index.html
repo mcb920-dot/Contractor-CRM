@@ -591,10 +591,13 @@ function JobForm({initialData,onSave,onClose,saveLabel,saveLoading}){
 function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
   const [saving,setSaving]=useState(false);
   const [form,setForm]=useState(editMode&&existingInv?{
-    client_name:existingInv.client||'',client_email:'',client_phone:'',
+    client_name:existingInv.client||'',
+    client_email:existingInv.client_email||'',
+    client_phone:existingInv.client_phone||'',
     title:'Services Rendered',issued:today(),due:existingInv.due_date||'',
-    tax:'0',notes:'',
-    lines:[{desc:'Services',qty:'1',price:String(existingInv.amount||0)}]
+    tax:String(existingInv.tax||'0'),
+    notes:existingInv.notes||'',
+    lines:(existingInv.lines&&existingInv.lines.length>0)?existingInv.lines:[{desc:'Services',qty:'1',price:String(existingInv.amount||0)}]
   }:{
     client_name:'',client_email:'',client_phone:'',
     title:'Services Rendered',issued:today(),due:'',
@@ -677,14 +680,24 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
       var updateResult=await supabase.from('invoices').update({
         client:form.client_name,
         amount:total,
-        due_date:form.due||null
+        due_date:form.due||null,
+        client_email:form.client_email||null,
+        client_phone:form.client_phone||null,
+        lines:form.lines,
+        tax:parseFloat(form.tax)||0,
+        notes:form.notes||null
       }).eq('id',existingInv.id);
       if(updateResult.error){console.error('Save error:',updateResult.error);setSaving(false);alert('Save failed: '+updateResult.error.message);return;}
-      res={error:null,data:{...existingInv,client:form.client_name,amount:total,due_date:form.due||null}};
+      res={error:null,data:{...existingInv,client:form.client_name,amount:total,due_date:form.due||null,client_email:form.client_email,client_phone:form.client_phone,lines:form.lines,tax:parseFloat(form.tax)||0,notes:form.notes}};
     } else {
       res=await supabase.from('invoices').insert({
         client:form.client_name,amount:total,status:'Draft',
-        due_date:form.due||null,user_id:userId
+        due_date:form.due||null,user_id:userId,
+        client_email:form.client_email||null,
+        client_phone:form.client_phone||null,
+        lines:form.lines,
+        tax:parseFloat(form.tax)||0,
+        notes:form.notes||null
       }).select().single();
     }
     setSaving(false);
