@@ -764,39 +764,38 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
           <Btn onClick={print} variant="secondary" style={{flex:1,padding:'10px',fontSize:13}}>Print / PDF</Btn>
           <Btn onClick={save} loading={saving} style={{flex:1,padding:'10px',fontSize:13}}>{editMode?'Save Changes':'Save Invoice'}</Btn>
         </div>
-        <Btn onClick={function(){
+        <Btn onClick={async function(){
+          if(!form.client_email.trim()){alert('Please enter a client email address.');return;}
           var biz=(profile&&(profile.business_name||profile.full_name))||'Your Business';
-          var nl='%0A';
-          var sub2='mailto:';
-          var to=form.client_email?encodeURIComponent(form.client_email):'';
-          var subj=encodeURIComponent('Invoice from '+biz);
-          var lineItems=form.lines.filter(function(l){return l.desc||l.price;}).map(function(l){
-            var amt=(parseFloat(l.qty)||0)*(parseFloat(l.price)||0);
-            return encodeURIComponent(l.desc+' x'+l.qty+' = $'+amt.toFixed(2));
-          }).join(nl);
-          var body=encodeURIComponent('Hi ')+encodeURIComponent(form.client_name)+','+nl+nl
-            +encodeURIComponent('Please find your invoice details below:')+nl+nl
-            +(lineItems?lineItems+nl+nl:'')
-            +encodeURIComponent('Subtotal: $'+sub.toFixed(2))+nl
-            +(parseFloat(form.tax)>0?encodeURIComponent('Tax: $'+tax.toFixed(2))+nl:'')
-            +encodeURIComponent('Total: $'+total.toFixed(2))
-            +(form.due?nl+encodeURIComponent('Due: '+form.due):'')
-            +nl+nl+encodeURIComponent('Thank you for your business!')+nl+encodeURIComponent(biz);
-          // Build payment links section
-          var payLines='';
-          if(profile){
-            var methods=[];
-            if(profile.cashapp) methods.push('CashApp: cash.app/'+(profile.cashapp.startsWith('$')?profile.cashapp:'$'+profile.cashapp));
-            if(profile.venmo)   methods.push('Venmo: venmo.com/'+profile.venmo.replace('@',''));
-            if(profile.zelle)   methods.push('Zelle: '+profile.zelle);
-            if(profile.paypal)  methods.push('PayPal: paypal.me/'+profile.paypal.replace('@',''));
-            if(profile.square)  methods.push('Square: '+profile.square);
-            if(profile.stripe_link) methods.push('Card/Online: '+profile.stripe_link);
-            if(methods.length>0){
-              payLines=nl+nl+'--- PAY NOW ---'+nl+methods.map(function(m){return encodeURIComponent(m);}).join(nl);
-            }
-          }
-          window.location.href=sub2+to+'?subject='+subj+'&body='+body+payLines;
+          var payment_methods={
+            cashapp:profile?.cashapp||'',
+            venmo:profile?.venmo||'',
+            zelle:profile?.zelle||'',
+            paypal:profile?.paypal||'',
+            square:profile?.square||'',
+            stripe_link:profile?.stripe_link||''
+          };
+          try{
+            var res=await fetch('https://gfxmkouojymwgpvbngzz.supabase.co/functions/v1/send-invoice',{
+              method:'POST',
+              headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmeG1rb3Vvanltd2dwdmJuZ3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDg5ODAsImV4cCI6MjA4OTUyNDk4MH0.kGTwFZcoHnkuFJR-FTk__MuK6KaqUp7A5HNIkQy1EMA'},
+              body:JSON.stringify({
+                to:form.client_email,
+                client_name:form.client_name,
+                biz_name:biz,
+                lines:form.lines,
+                subtotal:sub,
+                tax:tax,
+                total:total,
+                due_date:form.due||'',
+                notes:form.notes||'',
+                payment_methods:payment_methods
+              })
+            });
+            var data=await res.json();
+            if(data.success){alert('Invoice sent to '+form.client_email+'!');}
+            else{alert('Failed to send: '+(data.error?.message||JSON.stringify(data.error)));}
+          }catch(e){alert('Error: '+e.message);}
         }} variant="secondary" style={{width:'100%',padding:'10px',fontSize:13}}>Email Invoice</Btn>
       </div>
     </div>
