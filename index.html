@@ -674,10 +674,13 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
     setSaving(true);
     var res;
     if(editMode&&existingInv){
-      res=await supabase.from('invoices').update({
-        client:form.client_name,amount:total,
+      var updateResult=await supabase.from('invoices').update({
+        client:form.client_name,
+        amount:total,
         due_date:form.due||null
-      }).eq('id',existingInv.id).select().single();
+      }).eq('id',existingInv.id);
+      if(updateResult.error){console.error('Save error:',updateResult.error);setSaving(false);alert('Save failed: '+updateResult.error.message);return;}
+      res={error:null,data:{...existingInv,client:form.client_name,amount:total,due_date:form.due||null}};
     } else {
       res=await supabase.from('invoices').insert({
         client:form.client_name,amount:total,status:'Draft',
@@ -1070,7 +1073,7 @@ function Invoices({invoices,setInvoices,userId,profile}){
             ))}
           </div>
           {showAdd&&<InvoiceCreator userId={userId} profile={profile} onSave={function(inv){setInvoices(function(prev){return [inv,...prev];});setShowAdd(false);}} onClose={function(){setShowAdd(false);}}/>}
-          {editInv&&<InvoiceCreator userId={userId} profile={profile} editMode={true} existingInv={editInv} onSave={function(updated){setInvoices(function(prev){return prev.map(function(i){return i.id===updated.id?updated:i;});});setEditInv(null);}} onClose={function(){setEditInv(null);}}/>}
+          {editInv&&<InvoiceCreator userId={userId} profile={profile} editMode={true} existingInv={editInv} onSave={function(updated){setInvoices(function(prev){return prev.map(function(i){return i.id===updated.id?{...i,...updated}:i;});});setEditInv(null);}} onClose={function(){setEditInv(null);}}/>}
           {payInv&&<PaymentSheet invoice={payInv} profile={profile} onClose={()=>setPayInv(null)}/>}
           {showSettings&&<Settings profile={profile} userId={userId} onUpdate={updates=>{Object.assign(profile,updates);}} onClose={()=>setShowSettings(false)}/>}
         </>);
