@@ -789,9 +789,131 @@ function InvoiceCreator({userId,profile,onSave,onClose,editMode,existingInv}){
   );
 }
 
+
+// ─── PAYMENT SHEET ────────────────────────────────────────────────────────────
+function PaymentSheet({invoice, profile, onClose}){
+  const amt = invoice.amount ? invoice.amount.toFixed(2) : '0.00';
+  const note = encodeURIComponent((profile?.business_name||'Invoice') + ' - $' + amt);
+
+  const methods = [];
+  if(profile?.cashapp)   methods.push({name:'CashApp',   color:'#00D632', handle:profile.cashapp,   url:`https://cash.app/${profile.cashapp.startsWith('$')?profile.cashapp:'$'+profile.cashapp}/${amt}`});
+  if(profile?.venmo)     methods.push({name:'Venmo',     color:'#3D95CE', handle:profile.venmo,     url:`https://venmo.com/${profile.venmo.replace('@','')}?txn=pay&amount=${amt}&note=${note}`});
+  if(profile?.zelle)     methods.push({name:'Zelle',     color:'#6D1ED4', handle:profile.zelle,     url:`https://enroll.zellepay.com/`});
+  if(profile?.square)    methods.push({name:'Square',    color:'#3E4348', handle:profile.square,    url:profile.square});
+  if(profile?.paypal)    methods.push({name:'PayPal',    color:'#003087', handle:profile.paypal,    url:`https://paypal.me/${profile.paypal.replace('@','')}/${amt}`});
+  if(profile?.stripe_link) methods.push({name:'Card/Stripe', color:'#635BFF', handle:'Pay by card', url:profile.stripe_link});
+
+  if(methods.length === 0){
+    return(
+      <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:300,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+        onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+        <div style={{background:C.white,borderRadius:'20px 20px 0 0',width:'100%',maxWidth:430,padding:'24px 20px 48px'}}>
+          <div style={{width:36,height:4,background:C.border,borderRadius:2,margin:'0 auto 20px'}}/>
+          <p style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:8,textAlign:'center'}}>No payment methods set up</p>
+          <p style={{fontSize:13,color:C.muted,textAlign:'center',lineHeight:1.5}}>Add your CashApp, Venmo, Zelle or other payment handles in Settings to use this feature.</p>
+          <button onClick={onClose} style={{width:'100%',marginTop:20,background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:'12px',fontSize:14,fontWeight:600,color:C.muted,fontFamily:'inherit',cursor:'pointer'}}>Close</button>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:300,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.white,borderRadius:'20px 20px 0 0',width:'100%',maxWidth:430,padding:'24px 20px 48px',animation:'slideUp 0.25s ease'}}>
+        <div style={{width:36,height:4,background:C.border,borderRadius:2,margin:'0 auto 20px'}}/>
+        <p style={{fontSize:11,fontWeight:600,color:C.muted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4,textAlign:'center'}}>Request Payment From</p>
+        <p style={{fontSize:22,fontWeight:800,color:C.text,textAlign:'center',marginBottom:6}}>{invoice.client}</p>
+        <p style={{fontSize:28,fontWeight:800,color:C.green,textAlign:'center',marginBottom:24}}>${amt}</p>
+
+        <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16}}>
+          {methods.map(m=>(
+            <a key={m.name} href={m.url} target="_blank" rel="noopener noreferrer"
+              style={{display:'flex',alignItems:'center',gap:14,background:m.color,borderRadius:14,padding:'14px 18px',textDecoration:'none',cursor:'pointer'}}>
+              <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <span style={{fontSize:18,fontWeight:900,color:'white'}}>{m.name[0]}</span>
+              </div>
+              <div style={{flex:1}}>
+                <p style={{fontSize:15,fontWeight:700,color:'white',marginBottom:2}}>{m.name}</p>
+                <p style={{fontSize:12,color:'rgba(255,255,255,0.75)'}}>{m.handle}</p>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+          ))}
+        </div>
+
+        <button onClick={onClose}
+          style={{width:'100%',background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:'12px',fontSize:14,fontWeight:600,color:C.muted,fontFamily:'inherit',cursor:'pointer'}}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function Settings({profile, userId, onUpdate, onClose}){
+  const [form, setForm] = useState({
+    cashapp:   profile?.cashapp   || '',
+    venmo:     profile?.venmo     || '',
+    zelle:     profile?.zelle     || '',
+    paypal:    profile?.paypal    || '',
+    square:    profile?.square    || '',
+    stripe_link: profile?.stripe_link || '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const save = async() => {
+    setSaving(true);
+    await supabase.from('profiles').update(form).eq('id', userId);
+    onUpdate(form);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 2000);
+  };
+
+  const upd = k => v => setForm(p=>({...p,[k]:v}));
+
+  const fields = [
+    {key:'cashapp',   label:'CashApp',    placeholder:'$YourTag'},
+    {key:'venmo',     label:'Venmo',      placeholder:'@YourHandle'},
+    {key:'zelle',     label:'Zelle',      placeholder:'Phone or email'},
+    {key:'paypal',    label:'PayPal',     placeholder:'@YourHandle'},
+    {key:'square',    label:'Square Link',placeholder:'https://square.link/...'},
+    {key:'stripe_link',label:'Stripe / Card Link',placeholder:'https://buy.stripe.com/...'},
+  ];
+
+  return(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:200,overflowY:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:60,paddingBottom:40}}
+      onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:C.white,borderRadius:16,width:'calc(100% - 32px)',maxWidth:480,padding:'20px 20px 32px'}}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+          <span style={{fontSize:16,fontWeight:700,color:C.text}}>Payment Settings</span>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',color:C.muted,lineHeight:1}}>x</button>
+        </div>
+        <p style={{fontSize:13,color:C.muted,marginBottom:20}}>Add your handles so clients can pay you directly.</p>
+
+        {fields.map(f=>(
+          <Inp key={f.key} label={f.label} value={form[f.key]} onChange={upd(f.key)} placeholder={f.placeholder}/>
+        ))}
+
+        <Btn onClick={save} loading={saving} style={{width:'100%',padding:'12px'}}>
+          {saved ? '✓ Saved!' : 'Save Payment Methods'}
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 function Invoices({invoices,setInvoices,userId,profile}){
   const [showAdd,setShowAdd]=useState(false);
   const [editInv,setEditInv]=useState(null);
+  const [payInv,setPayInv]=useState(null);
+  const [showSettings,setShowSettings]=useState(false);
   const statuses=['Draft','Sent','Paid','Overdue'];
 
   const paid=invoices.filter(i=>i.status==='Paid').reduce((a,i)=>a+(i.amount||0),0);
@@ -821,7 +943,12 @@ function Invoices({invoices,setInvoices,userId,profile}){
           <h1 style={{fontSize:24,fontWeight:800,color:C.text,letterSpacing:'-0.03em'}}>Invoices</h1>
           <p style={{fontSize:13,color:C.muted,marginTop:2}}>{fmt$(owed)} owed - {fmt$(paid)} collected</p>
         </div>
-        <Btn onClick={()=>setShowAdd(true)}>+ Create</Btn>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>setShowSettings(true)} style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:10,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke={C.muted} strokeWidth="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke={C.muted} strokeWidth="2"/></svg>
+          </button>
+          <Btn onClick={()=>setShowAdd(true)}>+ Create</Btn>
+        </div>
       </div>
 
       <div className="fu1" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
@@ -914,19 +1041,25 @@ function Invoices({invoices,setInvoices,userId,profile}){
                     </div>
                   </div>
                 </div>
-                <div style={{display:'flex',gap:6,paddingLeft:48}} onClick={e=>e.stopPropagation()}>
+                <div style={{display:'flex',gap:6,paddingLeft:48,flexWrap:'wrap',alignItems:'center'}} onClick={e=>e.stopPropagation()}>
                   {statuses.filter(s=>s!==inv.status).map(s=>(
                     <button key={s} onClick={()=>updateStatus(inv.id,s)}
                       style={{background:s==='Paid'?C.greenBg:C.bg,border:`1px solid ${s==='Paid'?C.green:C.border}`,borderRadius:6,padding:'4px 10px',color:s==='Paid'?C.green:C.muted,fontSize:11,fontWeight:s==='Paid'?600:500,fontFamily:'inherit',cursor:'pointer'}}>
                       {s}
                     </button>
                   ))}
+                  <button onClick={()=>setPayInv(inv)}
+                    style={{background:'#00D632',border:'none',borderRadius:6,padding:'4px 12px',color:'white',fontSize:11,fontWeight:700,fontFamily:'inherit',cursor:'pointer',marginLeft:'auto'}}>
+                    💸 Request
+                  </button>
                 </div>
               </div>
             ))}
           </div>
           {showAdd&&<InvoiceCreator userId={userId} profile={profile} onSave={function(inv){setInvoices(function(prev){return [inv,...prev];});setShowAdd(false);}} onClose={function(){setShowAdd(false);}}/>}
           {editInv&&<InvoiceCreator userId={userId} profile={profile} editMode={true} existingInv={editInv} onSave={function(updated){setInvoices(function(prev){return prev.map(function(i){return i.id===updated.id?updated:i;});});setEditInv(null);}} onClose={function(){setEditInv(null);}}/>}
+          {payInv&&<PaymentSheet invoice={payInv} profile={profile} onClose={()=>setPayInv(null)}/>}
+          {showSettings&&<Settings profile={profile} userId={userId} onUpdate={updates=>{Object.assign(profile,updates);}} onClose={()=>setShowSettings(false)}/>}
         </>);
       })()}
     </div>
