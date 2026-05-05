@@ -498,19 +498,34 @@ function Leads({leads,setLeads,setJobs,setClients,userId}){
     setForm(blank);setShowAdd(false);setLoading(false);
   };
 
-  const updateStatus=async(id,status)=>{
+ // Replace the updateStatus function in the Leads component with this fixed version.
+// Find "const updateStatus=async(id,status)=>{" and replace the entire function.
+
+const updateStatus=async(id,status)=>{
     const lead=leads.find(l=>l.id===id);
     if(!lead||lead.status===status)return;
     if(status==='Won'){
+      // ─── FIX: Get or create client before creating job ───
+      let client_id = lead.client_id || null;
+      if(!client_id){
+        client_id = await getOrCreateClient(
+          lead.name,
+          lead.phone,
+          lead.email,
+          lead.address,
+          lead.source
+        );
+      }
+      // ─────────────────────────────────────────────────────
       const newJob={
         client:lead.name,trade:lead.trade,status:'Scheduled',
         value:lead.value||0,start_date:today(),
         address:lead.address||'',notes:lead.notes||'',
-        user_id:userId,client_id:lead.client_id||null
+        user_id:userId,client_id:client_id
       };
       const{data:jobData,error:jobErr}=await supabase.from('jobs').insert(newJob).select().single();
       if(jobErr){console.error('Job creation failed:',jobErr.message);return;}
-      await supabase.from('leads').update({status:'Won'}).eq('id',id);
+      await supabase.from('leads').update({status:'Won',client_id:client_id}).eq('id',id);
       setLeads(prev=>prev.filter(l=>l.id!==id));
       setJobs(prev=>[jobData,...prev]);
     } else {
